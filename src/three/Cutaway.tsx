@@ -215,7 +215,7 @@ function TrenchWalls() {
     ref.current.visible = live.trench > 0.005 && live.exploded < 0.9;
     material.depthWrite = G.uXray.value < 0.5;
   });
-  return <mesh ref={ref} geometry={geometry} material={material} raycast={noRaycast} receiveShadow renderOrder={1} />;
+  return <mesh ref={ref} geometry={geometry} material={material} raycast={noRaycast} renderOrder={1} />;
 }
 
 /** Bright outline of the cut on the road surface. */

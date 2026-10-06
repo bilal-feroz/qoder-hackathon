@@ -20,7 +20,34 @@ float stripe(float x, float duty) {
   return mix(s, duty, smoothstep(0.4, 0.9, fw));
 }
 
-struct RoadSample { vec3 color; vec3 emissive; float road; };
+struct RoadSample { vec3 color; vec3 emissive; float road; float rough; };
+
+/* white, yellow and green paint for one street cross-section (lat = signed offset from the centre line) */
+vec3 laneMarks(float lat, float along, float wide) {
+  float a = abs(lat);
+  float white = 0.0;
+  float yellow = 0.0;
+  float green = 0.0;
+  if (wide < 0.5) {
+    yellow = aaBand(a - 0.075, 0.024);
+    white = aaBand(a - 1.1, 0.022) * stripe(along / 2.4, 0.42);
+    white = max(white, aaBand(a - 2.02, 0.02));
+    float tick = aaBand((fract(along / 0.85 + 0.5) - 0.5) * 0.85, 0.014) * step(2.02, a) * step(a, 2.34);
+    white = max(white, tick);
+  } else {
+    yellow = aaBand(a - 0.55, 0.026);
+    float hatch = stripe((along + lat) / 0.5, 0.2) * step(a, 0.5);
+    yellow = max(yellow, hatch * 0.8);
+    white = aaBand(a - 1.45, 0.022) * stripe(along / 2.4, 0.42);
+    white = max(white, aaBand(a - 2.35, 0.022) * stripe(along / 2.4, 0.42));
+    white = max(white, aaBand(a - 3.3, 0.026));
+    green = step(3.33, a) * step(a, 3.79);
+    white = max(white, aaBand(a - 3.81, 0.018));
+    float tick = aaBand((fract(along / 0.85 + 0.5) - 0.5) * 0.85, 0.014) * step(3.83, a) * step(a, 4.24);
+    white = max(white, tick);
+  }
+  return vec3(white, yellow, green);
+}
 
 RoadSample roadSample(vec2 p) {
   RoadSample r;
@@ -38,51 +65,64 @@ RoadSample roadSample(vec2 p) {
   bool inEW = dz < hz && abs(p.x) < 72.5;
   bool inNS = dx < hx && abs(p.y) < 60.5;
 
+  // aged asphalt: aggregate grain, repair patches, darker wheel paths
   float n1 = gfbm(p * 0.21);
-  vec3 asphalt = vec3(0.036, 0.04, 0.047) * (0.86 + 0.28 * n1);
+  vec3 asphalt = vec3(0.078, 0.08, 0.086) * (0.84 + 0.3 * n1);
   float patchN = gnoise(p * 0.06 + 13.0);
-  asphalt = mix(asphalt, asphalt * 1.22, smoothstep(0.66, 0.7, patchN));
-  asphalt *= 0.94 + 0.12 * gh21(floor(p * 7.0));
+  asphalt = mix(asphalt, asphalt * 0.78, smoothstep(0.66, 0.7, patchN));
+  asphalt *= 0.92 + 0.14 * gh21(floor(p * 9.0));
 
-  vec3 paving = vec3(0.078, 0.084, 0.094) * (0.92 + 0.12 * gnoise(p * 0.7));
+  // concrete pavers outside the carriageways
+  vec3 paving = vec3(0.22, 0.215, 0.21) * (0.9 + 0.14 * gnoise(p * 0.7));
   float jx = abs(fract(p.x / 1.5) - 0.5) * 2.0;
   float jzz = abs(fract(p.y / 1.5) - 0.5) * 2.0;
-  paving *= 1.0 - 0.18 * max(smoothstep(0.92, 0.98, jx), smoothstep(0.92, 0.98, jzz));
+  paving *= 1.0 - 0.16 * max(smoothstep(0.92, 0.98, jx), smoothstep(0.92, 0.98, jzz));
 
   float line = 0.0;
   float yellow = 0.0;
+  float green = 0.0;
+  float wheel = 0.0;
   if (inEW && !inNS) {
     float sz = p.y - zc;
-    if (jz == 2) {
-      yellow = max(aaBand(sz - 0.2, 0.06), aaBand(sz + 0.2, 0.06));
-      line = max(line, aaBand(abs(sz) - 2.3, 0.055) * stripe(p.x / 4.0, 0.5));
-    } else {
-      line = max(line, aaBand(sz, 0.055) * stripe(p.x / 3.0, 0.55));
-    }
-    line = max(line, aaBand(abs(sz) - (hz - 0.32), 0.045));
+    vec3 m = laneMarks(sz, p.x, jz == 2 ? 1.0 : 0.0);
+    line = m.x; yellow = m.y; green = m.z;
+    float lw = jz == 2 ? 0.9 : 0.95;
+    wheel = 1.0 - smoothstep(0.0, 0.16, abs(abs(fract(abs(sz) / lw) - 0.5) - 0.17));
     float ax = abs(p.x - xc);
     float cw = step(hx + 0.35, ax) * step(ax, hx + 2.0) * step(abs(sz), hz - 0.35);
     line = max(line, cw * stripe(sz / 0.8, 0.5));
-    line = max(line, step(hx + 2.3, ax) * step(ax, hx + 2.55) * step(abs(sz), hz - 0.2));
+    line = max(line, step(hx + 2.3, ax) * step(ax, hx + 2.55) * step(abs(sz), hz - 0.2) * step((p.x - xc) * sz, 0.0));
+    // no lane paint across the crossings
+    float clear = step(ax, hx + 2.6);
+    yellow *= 1.0 - clear; green *= 1.0 - clear;
+    line = mix(line, max(cw * stripe(sz / 0.8, 0.5), step(hx + 2.3, ax) * step(ax, hx + 2.55) * step(abs(sz), hz - 0.2) * step((p.x - xc) * sz, 0.0)), clear);
   }
   if (inNS && !inEW) {
     float sx = p.x - xc;
-    line = max(line, aaBand(sx, 0.055) * stripe(p.y / 3.0, 0.55));
-    line = max(line, aaBand(abs(sx) - (hx - 0.32), 0.045));
+    vec3 m = laneMarks(sx, p.y, 0.0);
+    line = m.x; yellow = m.y;
+    wheel = 1.0 - smoothstep(0.0, 0.16, abs(abs(fract(abs(sx) / 0.95) - 0.5) - 0.17));
     float az = abs(p.y - zc);
     float hzz = hz;
     float cw = step(hzz + 0.35, az) * step(az, hzz + 2.0) * step(abs(sx), hx - 0.35);
-    line = max(line, cw * stripe(sx / 0.8, 0.5));
-    line = max(line, step(hzz + 2.3, az) * step(az, hzz + 2.55) * step(abs(sx), hx - 0.2));
+    float stopL = step(hzz + 2.3, az) * step(az, hzz + 2.55) * step(abs(sx), hx - 0.2) * step(0.0, (p.y - zc) * sx);
+    float clear = step(az, hzz + 2.6);
+    yellow *= 1.0 - clear;
+    line = mix(line, max(cw * stripe(sx / 0.8, 0.5), stopL), clear);
   }
   r.road = (inEW || inNS) ? 1.0 : 0.0;
+  asphalt *= 1.0 - 0.1 * wheel * r.road;
   vec3 c = r.road > 0.5 ? asphalt : paving;
-  vec3 lineCol = vec3(0.42, 0.44, 0.47);
-  vec3 yel = vec3(0.78, 0.6, 0.24);
-  c = mix(c, lineCol, line * r.road * 0.85);
-  c = mix(c, yel, yellow * r.road * 0.85);
+  vec3 lineCol = vec3(0.74, 0.74, 0.72);
+  vec3 yel = vec3(0.84, 0.6, 0.16);
+  vec3 grn = vec3(0.12, 0.3, 0.17);
+  float wornL = 0.78 + 0.22 * gnoise(p * 1.7);
+  c = mix(c, grn, green * r.road * 0.9);
+  c = mix(c, lineCol, line * r.road * 0.85 * wornL);
+  c = mix(c, yel, yellow * r.road * 0.85 * wornL);
   r.color = c;
-  r.emissive = (lineCol * line + yel * yellow) * 0.035 * r.road;
+  r.rough = mix(0.86, 0.6, max(line, yellow) * r.road);
+  r.emissive = (lineCol * line + yel * yellow) * 0.012 * r.road;
   return r;
 }
 `;
@@ -133,6 +173,7 @@ export function createAsphaltMaterial() {
       diffuseColor.rgb = rs.color;
     `,
     fragmentEmissive: /* glsl */ `
+      roughnessFactor = rs.rough;
       totalEmissiveRadiance += rs.emissive;
       totalEmissiveRadiance += vec3(0.25, 0.75, 1.0) * liveSweep(gp) * (1.0 - uXray);
     `,
@@ -194,26 +235,27 @@ export function createPlinthMaterial() {
       float m = max(abs(l.x), abs(l.y));
       float topF = step(0.5, vObjNP.y);
       float sw = smoothstep(9.94, 10.06, m);
-      vec3 side = vec3(0.1, 0.105, 0.115) * (0.9 + 0.1 * gnoise(gp * 3.0));
-      vec3 sidewalk = vec3(0.095, 0.1, 0.11) * (0.93 + 0.12 * gnoise(gp * 1.7));
+      vec3 side = vec3(0.3, 0.3, 0.3) * (0.9 + 0.1 * gnoise(gp * 3.0));
+      vec3 sidewalk = vec3(0.27, 0.265, 0.26) * (0.9 + 0.16 * gnoise(gp * 1.7));
       vec2 sj = abs(fract(gp / 1.5) - 0.5) * 2.0;
       sidewalk *= 1.0 - 0.16 * max(smoothstep(0.9, 0.97, sj.x), smoothstep(0.9, 0.97, sj.y));
-      vec3 inner = vec3(0.062, 0.067, 0.076) * (0.9 + 0.16 * gfbm(gp * 0.4));
+      vec3 inner = vec3(0.2, 0.198, 0.195) * (0.88 + 0.2 * gfbm(gp * 0.4));
       vec2 tj = abs(fract(gp / 3.0) - 0.5) * 2.0;
       inner *= 1.0 - 0.1 * max(smoothstep(0.93, 0.98, tj.x), smoothstep(0.93, 0.98, tj.y));
       if (vKind > 0.5 && vKind < 1.5) {
         // park lawn + paths
-        inner = vec3(0.04, 0.066, 0.048) * (0.8 + 0.4 * gfbm(gp * 0.5));
+        inner = vec3(0.085, 0.15, 0.06) * (0.72 + 0.5 * gfbm(gp * 0.5));
+        inner *= 0.9 + 0.2 * gh21(floor(gp * 14.0));
         float path = min(abs(l.x - l.y * 0.35 - 1.0), abs(l.y + sin(l.x * 0.25) * 2.5 - 1.5));
-        inner = mix(inner, vec3(0.1, 0.098, 0.09), 1.0 - smoothstep(0.55, 0.7, path));
+        inner = mix(inner, vec3(0.34, 0.31, 0.26), 1.0 - smoothstep(0.55, 0.7, path));
       } else if (vKind > 1.5 && vKind < 2.5) {
         // gravel yard
-        inner = vec3(0.07, 0.07, 0.073) * (0.75 + 0.5 * gh21(floor(gp * 6.0)));
+        inner = vec3(0.22, 0.215, 0.205) * (0.75 + 0.5 * gh21(floor(gp * 6.0)));
       } else if (vKind > 2.5) {
-        inner = vec3(0.042, 0.07, 0.05) * (0.85 + 0.3 * gfbm(gp * 0.6));
+        inner = vec3(0.09, 0.16, 0.065) * (0.8 + 0.4 * gfbm(gp * 0.6));
       }
       vec3 top = mix(inner, sidewalk, sw);
-      top = mix(top, vec3(0.15, 0.155, 0.165), smoothstep(11.28, 11.36, m));
+      top = mix(top, vec3(0.42, 0.42, 0.41), smoothstep(11.28, 11.36, m));
       diffuseColor.rgb = mix(side, top, topF);
     `,
     fragmentEmissive: /* glsl */ `

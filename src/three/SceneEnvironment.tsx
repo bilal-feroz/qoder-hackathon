@@ -1,54 +1,30 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Environment, Lightformer } from '@react-three/drei';
-import { BackSide, Color, FogExp2, Mesh, ShaderMaterial, type DirectionalLight } from 'three';
-import { FOG_COLOR, FOG_DENSITY, SKY_BOTTOM, SKY_HORIZON, SKY_TOP } from './sceneConfig';
+import { Color, FogExp2, Mesh, ShaderMaterial, Vector3, type DirectionalLight } from 'three';
+import { FOG_COLOR, FOG_DENSITY, SKY_BOTTOM, SUN_COLOR, SUN_DIR, SUN_INTENSITY } from './sceneConfig';
+import { createSkyMaterial } from './sky';
 import { G } from './shaders/globals';
 
 function SkyDome() {
-  const mat = useMemo(
-    () =>
-      new ShaderMaterial({
-        side: BackSide,
-        depthWrite: false,
-        fog: false,
-        uniforms: {
-          uTop: { value: new Color(SKY_TOP) },
-          uHorizon: { value: new Color(SKY_HORIZON) },
-          uBottom: { value: new Color(SKY_BOTTOM) },
-        },
-        vertexShader: /* glsl */ `
-          varying vec3 vDir;
-          void main() {
-            vDir = normalize(position);
-            vec4 p = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            gl_Position = p.xyww;
-          }
-        `,
-        fragmentShader: /* glsl */ `
-          uniform vec3 uTop;
-          uniform vec3 uHorizon;
-          uniform vec3 uBottom;
-          varying vec3 vDir;
-          void main() {
-            float y = vDir.y;
-            vec3 c = mix(uHorizon, uTop, smoothstep(0.0, 0.55, y));
-            c = mix(c, uBottom, smoothstep(0.0, -0.35, y));
-            // faint glow low on the horizon toward the river
-            c += vec3(0.02, 0.035, 0.05) * exp(-abs(y) * 9.0);
-            gl_FragColor = vec4(c, 1.0);
-          }
-        `,
-      }),
-    [],
-  );
+  const mat = useMemo(() => createSkyMaterial(false), []);
   const ref = useRef<Mesh>(null);
   useFrame(({ camera }) => {
     if (ref.current) ref.current.position.copy(camera.position);
   });
   return (
     <mesh ref={ref} material={mat} renderOrder={-100} frustumCulled={false}>
-      <sphereGeometry args={[800, 32, 16]} />
+      <sphereGeometry args={[800, 48, 24]} />
+    </mesh>
+  );
+}
+
+/** The sky rendered once into the environment map: glass, paint and water reflect the dusk. */
+function EnvSky() {
+  const mat = useMemo(() => createSkyMaterial(true), []);
+  return (
+    <mesh material={mat} scale={400}>
+      <sphereGeometry args={[1, 48, 24]} />
     </mesh>
   );
 }
@@ -84,7 +60,7 @@ function GridFloor() {
             float fade = 1.0 - smoothstep(90.0, 330.0, d);
             float g1 = grid(vXZ, 10.0, 1.2) * 0.35;
             float g2 = grid(vXZ, 50.0, 1.6) * 0.5;
-            float a = max(g1, g2) * fade * 0.28;
+            float a = max(g1, g2) * fade * 0.24;
             gl_FragColor = vec4(uColor * 0.55, a);
           }
         `,
@@ -98,7 +74,48 @@ function GridFloor() {
   );
 }
 
-export function SceneEnvironment() {
+/** Fits the orthographic shadow frustum tightly around the city as seen from the sun. */
+function fitShadow(light: DirectionalLight) {
+  const center = new Vector3(0, 0, 10);
+  const pos = SUN_DIR.clone().multiplyScalar(260).add(center);
+  light.position.copy(pos);
+  light.target.position.copy(center);
+  light.target.updateMatrixWorld();
+  const z = pos.clone().sub(center).normalize();
+  const x = new Vector3(0, 1, 0).cross(z).normalize();
+  const y = z.clone().cross(x);
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  let minD = Infinity;
+  let maxD = -Infinity;
+  const c = new Vector3();
+  for (const cx of [-82, 82])
+    for (const cy of [-1, 34])
+      for (const cz of [-70, 94]) {
+        c.set(cx, cy, cz).sub(pos);
+        const lx = c.dot(x);
+        const ly = c.dot(y);
+        const ld = -c.dot(z);
+        minX = Math.min(minX, lx);
+        maxX = Math.max(maxX, lx);
+        minY = Math.min(minY, ly);
+        maxY = Math.max(maxY, ly);
+        minD = Math.min(minD, ld);
+        maxD = Math.max(maxD, ld);
+      }
+  const cam = light.shadow.camera;
+  cam.left = minX - 1;
+  cam.right = maxX + 1;
+  cam.bottom = minY - 1;
+  cam.top = maxY + 1;
+  cam.near = Math.max(1, minD - 5);
+  cam.far = maxD + 5;
+  cam.updateProjectionMatrix();
+}
+
+export function SceneEnvironment({ shadowSize = 4096 }: { shadowSize?: number }) {
   const scene = useThree((s) => s.scene);
   const keyRef = useRef<DirectionalLight>(null);
 
@@ -111,42 +128,32 @@ export function SceneEnvironment() {
   }, [scene]);
 
   useEffect(() => {
-    const l = keyRef.current;
-    if (!l) return;
-    l.target.position.set(0, 0, 8);
-    l.target.updateMatrixWorld();
-    const cam = l.shadow.camera;
-    cam.left = -105;
-    cam.right = 105;
-    cam.top = 95;
-    cam.bottom = -95;
-    cam.near = 20;
-    cam.far = 400;
-    cam.updateProjectionMatrix();
+    if (keyRef.current) fitShadow(keyRef.current);
   }, []);
 
   return (
     <>
       <SkyDome />
       <GridFloor />
-      <hemisphereLight args={['#8fb0dc', '#15130f', 0.62]} />
+      {/* cool sky dome above, warm bounce from the ground */}
+      <hemisphereLight args={['#8d9dbd', '#2a2219', 0.5]} />
+      {/* low golden sun: long shadows across the blocks */}
       <directionalLight
         ref={keyRef}
-        position={[-85, 150, 110]}
-        intensity={1.55}
-        color="#dfe9ff"
+        intensity={SUN_INTENSITY}
+        color={SUN_COLOR}
         castShadow
-        shadow-mapSize={[2048, 2048]}
-        shadow-bias={-0.0005}
-        shadow-normalBias={0.035}
+        shadow-mapSize={[shadowSize, shadowSize]}
+        shadow-bias={-0.0004}
+        shadow-normalBias={0.04}
       />
-      <directionalLight position={[110, 60, -80]} intensity={0.42} color="#7f9fcc" />
-      <directionalLight position={[40, -30, 120]} intensity={0.25} color="#4a6a96" />
-      <Environment resolution={128} frames={1} environmentIntensity={0.38}>
-        <Lightformer form="rect" intensity={1.4} color="#9fb9e0" scale={[300, 300, 1]} position={[0, 180, 0]} rotation-x={Math.PI / 2} />
-        <Lightformer form="ring" intensity={0.9} color="#ffc68a" scale={[200, 12, 1]} position={[0, 12, -220]} />
-        <Lightformer form="rect" intensity={0.6} color="#5b86c4" scale={[250, 40, 1]} position={[220, 30, 40]} rotation-y={-Math.PI / 2} />
-        <Lightformer form="rect" intensity={0.4} color="#2d4a73" scale={[250, 40, 1]} position={[-220, 30, 40]} rotation-y={Math.PI / 2} />
+      {/* cool skylight from the opposite (east) side so shaded facades keep their form */}
+      <directionalLight position={[120, 70, -60]} intensity={0.36} color="#93a6c9" />
+      <directionalLight position={[40, -30, 120]} intensity={0.18} color="#4a6a96" />
+      <Environment resolution={256} frames={1} environmentIntensity={0.55}>
+        <EnvSky />
+        <Lightformer form="rect" intensity={0.5} color="#9fb9e0" scale={[300, 300, 1]} position={[0, 180, 0]} rotation-x={Math.PI / 2} />
+        <Lightformer form="rect" intensity={0.35} color="#5b86c4" scale={[250, 40, 1]} position={[220, 30, 40]} rotation-y={-Math.PI / 2} />
       </Environment>
     </>
   );

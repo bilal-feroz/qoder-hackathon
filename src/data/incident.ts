@@ -98,13 +98,14 @@ export const REPAIR_STEPS: RepairStep[] = [
   { id: 5, title: 'Pressure test and restore', detail: 'Reopen valves · verify 3.92 bar' },
 ];
 
-/** Crew route from the depot gate to the work zone, along street lanes (xz). */
+/** Crew route from the depot gate to the kerb beside the work zone, along street lanes (xz). */
 export const CREW_ROUTE: [number, number][] = [
   [52.5, 41],
-  [52.5, 28.75],
-  [15.25, 28.75],
-  [15.25, -1.4],
-  [12.9, -1.4],
+  [52.5, 28.45],
+  [15.55, 28.45],
+  [15.55, 11.8],
+  [16.24, 10.4],
+  [16.24, 8.2],
 ];
 
 export const EXPLAIN_FEATURES = [

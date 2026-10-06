@@ -6,8 +6,12 @@ import { SimulationDriver } from './SimulationDriver';
 import { CameraRig } from './CameraRig';
 import { Ground, Diorama } from './Ground';
 import { CityBuildings } from './CityBuildings';
+import { Rooftops } from './Rooftops';
 import { SpecialProps } from './SpecialProps';
 import { StreetFurniture } from './StreetFurniture';
+import { Vegetation } from './Vegetation';
+import { River } from './River';
+import { StreetLife } from './StreetLife';
 import { Traffic } from './Traffic';
 import { Cutaway, TrenchVolume } from './Cutaway';
 import { SurfaceMarkers } from './SensorNodes';
@@ -98,9 +102,13 @@ export function CityScene({ quality }: { quality: 'high' | 'low' }) {
       <CameraRig />
       <SurfaceGroup>
         <Ground />
+        <River />
         <CityBuildings />
+        <Rooftops />
         <SpecialProps />
         <StreetFurniture />
+        <Vegetation />
+        <StreetLife />
         <Traffic />
         <Cutaway />
         <SurfaceMarkers />

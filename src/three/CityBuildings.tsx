@@ -1,12 +1,11 @@
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { BoxGeometry, CylinderGeometry, InstancedBufferAttribute, InstancedMesh, Matrix4, Quaternion, SphereGeometry, Vector3, type Raycaster, type Intersection } from 'three';
+import { BoxGeometry, InstancedBufferAttribute, InstancedMesh, Matrix4, Quaternion, Vector3, type Raycaster, type Intersection } from 'three';
 import { BUILDINGS, BUILDING_BY_ID, PLINTH_H } from '../data/city';
 import { live } from '../simulation/runtime';
 import { G } from './shaders/globals';
 import { useTwinStore } from '../store/useTwinStore';
 import { createBuildingGhostMaterial, createBuildingSolidMaterial } from './materials/buildingMaterials';
-import { createGlowMaterial, createPropMaterial } from './materials/surfaceMaterials';
 
 const noRaycast = (_r: Raycaster, _i: Intersection[]) => {};
 
@@ -112,68 +111,6 @@ export function CityBuildings() {
         }}
       />
       <instancedMesh ref={ghostRef} args={[geometry, ghostMat, tiers.length]} frustumCulled={false} raycast={noRaycast} renderOrder={5} />
-      <RoofDetails />
-    </group>
-  );
-}
-
-function RoofDetails() {
-  const items = useMemo(() => BUILDINGS.flatMap((b) => b.roof), []);
-  const boxes = useMemo(() => items.filter((r) => r.type === 'box'), [items]);
-  const cyls = useMemo(() => items.filter((r) => r.type === 'cyl'), [items]);
-  const spires = useMemo(() => items.filter((r) => r.type === 'spire'), [items]);
-
-  const boxGeo = useMemo(() => new BoxGeometry(1, 1, 1).translate(0, 0.5, 0), []);
-  const cylGeo = useMemo(() => new CylinderGeometry(1, 1, 1, 14).translate(0, 0.5, 0), []);
-  const spireGeo = useMemo(() => new CylinderGeometry(0.25, 1, 1, 6).translate(0, 0.5, 0), []);
-  const lightGeo = useMemo(() => new SphereGeometry(0.16, 10, 8), []);
-
-  const boxMat = useMemo(() => createPropMaterial({ color: '#4a5260', roughness: 0.7, metalness: 0.2 }), []);
-  const tankMat = useMemo(() => createPropMaterial({ color: '#5a6170', roughness: 0.6, metalness: 0.3 }), []);
-  const spireMat = useMemo(() => createPropMaterial({ color: '#8a93a3', roughness: 0.4, metalness: 0.7 }), []);
-  const aviationMat = useMemo(() => createGlowMaterial('#ff3b30', 6, 0.5), []);
-
-  const boxRef = useRef<InstancedMesh>(null);
-  const cylRef = useRef<InstancedMesh>(null);
-  const spireRef = useRef<InstancedMesh>(null);
-  const lightRef = useRef<InstancedMesh>(null);
-
-  useLayoutEffect(() => {
-    const m = new Matrix4();
-    const q = new Quaternion();
-    boxes.forEach((r, i) => {
-      m.compose(new Vector3(r.x, r.y0 + PLINTH_H, r.z), q, new Vector3(r.w, r.h, r.d));
-      boxRef.current!.setMatrixAt(i, m);
-    });
-    cyls.forEach((r, i) => {
-      m.compose(new Vector3(r.x, r.y0 + PLINTH_H, r.z), q, new Vector3(r.w, r.h, r.d));
-      cylRef.current!.setMatrixAt(i, m);
-    });
-    spires.forEach((r, i) => {
-      m.compose(new Vector3(r.x, r.y0 + PLINTH_H, r.z), q, new Vector3(r.w, r.h, r.d));
-      spireRef.current!.setMatrixAt(i, m);
-      m.compose(new Vector3(r.x, r.y0 + PLINTH_H + r.h + 0.05, r.z), q, new Vector3(1, 1, 1));
-      lightRef.current!.setMatrixAt(i, m);
-    });
-    [boxRef, cylRef, spireRef, lightRef].forEach((r) => {
-      r.current!.instanceMatrix.needsUpdate = true;
-      r.current!.computeBoundingSphere();
-    });
-  }, [boxes, cyls, spires]);
-
-  useFrame(({ clock }) => {
-    const t = clock.elapsedTime;
-    const on = (Math.sin(t * 2.6) > 0.55 ? 1 : 0.08) * (1 - G.uXray.value * 0.6);
-    aviationMat.color.setRGB(6 * on, 0.35 * on, 0.3 * on);
-    if (boxRef.current) boxRef.current.castShadow = G.uXray.value < 0.5;
-  });
-
-  return (
-    <group>
-      <instancedMesh ref={boxRef} args={[boxGeo, boxMat, Math.max(1, boxes.length)]} castShadow receiveShadow raycast={noRaycast} />
-      <instancedMesh ref={cylRef} args={[cylGeo, tankMat, Math.max(1, cyls.length)]} castShadow raycast={noRaycast} />
-      <instancedMesh ref={spireRef} args={[spireGeo, spireMat, Math.max(1, spires.length)]} castShadow raycast={noRaycast} />
-      <instancedMesh ref={lightRef} args={[lightGeo, aviationMat, Math.max(1, spires.length)]} raycast={noRaycast} />
     </group>
   );
 }
