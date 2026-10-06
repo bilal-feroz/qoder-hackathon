@@ -754,11 +754,7 @@ kbd {
   position: fixed;
   inset: 0;
   z-index: 100;
-  display: grid;
-  place-items: center;
-  background:
-    radial-gradient(ellipse at 50% 40%, rgba(18, 32, 50, 0.65), transparent 60%),
-    var(--bg-0);
+  background: var(--bg-0);
   transition: opacity 0.8s ease, visibility 0.8s ease;
 }
 
@@ -768,10 +764,281 @@ kbd {
 }
 
 .loader-card {
-  width: 380px;
+  position: absolute;
+  left: 32px;
+  bottom: 32px;
+  width: 340px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  padding: 20px 22px 22px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
+  background: rgba(6, 10, 16, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: opacity 0.6s ease, transform 0.8s var(--ease-out);
+}
+
+@media (max-width: 760px) {
+  .loader-card {
+    left: 12px;
+    right: 12px;
+    bottom: 26px;
+    width: auto;
+  }
+
+  .mi-attrib {
+    left: 12px;
+    bottom: 4px;
+  }
+
+  .loader-skip {
+    display: none;
+  }
+}
+
+.loader.is-zooming .loader-card {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.loader-place {
+  margin: -8px 0 16px;
+  font-size: 11.5px;
+  color: var(--text-2);
+}
+
+.loader-skip {
+  position: absolute;
+  right: 28px;
+  bottom: 24px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+  animation: fadeIn 0.6s ease 1.2s both;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ---- opening map: UAE → Abu Dhabi Island → Al Danah ---- */
+
+.map-intro {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 45%, #0b1a26 0%, #060c13 70%);
+}
+
+/* soft edge so data extents never show */
+.map-intro::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 72% 72% at 50% 50%, transparent 55%, var(--bg-0) 100%);
+}
+
+.mi-svg {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.mi-labels {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.mi-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  white-space: nowrap;
+  will-change: transform, opacity;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+}
+
+.mi-en {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text-1);
+}
+
+.mi-ar {
+  font-size: 11px;
+  color: var(--text-2);
+}
+
+.mi-country .mi-en {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--text-0);
+}
+
+.mi-country .mi-ar {
+  font-size: 15px;
+  color: var(--text-1);
+}
+
+.mi-neighbour .mi-en {
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.mi-sea .mi-en {
+  font-size: 10.5px;
+  font-style: italic;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  color: rgba(120, 190, 220, 0.75);
+}
+
+.mi-sea .mi-ar {
+  color: rgba(120, 190, 220, 0.55);
+}
+
+.mi-city {
+  flex-direction: row;
+  gap: 6px;
+  transform-origin: 0 0;
+}
+
+.mi-city::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--text-1);
+  box-shadow: 0 0 0 2px rgba(6, 12, 19, 0.8);
+}
+
+.mi-city .mi-ar {
+  display: none;
+}
+
+.mi-city.is-capital::before {
+  width: 8px;
+  height: 8px;
+  background: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(79, 209, 232, 0.25), 0 0 14px rgba(79, 209, 232, 0.8);
+}
+
+.mi-city.is-capital .mi-en {
+  font-size: 13px;
+  color: var(--text-0);
+}
+
+.mi-city.is-capital .mi-ar {
+  display: inline;
+  font-size: 12px;
+}
+
+.mi-island .mi-en {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.mi-island.is-main .mi-en {
+  font-size: 12px;
+  color: var(--text-1);
+}
+
+.mi-site {
+  gap: 3px;
+}
+
+.mi-site::before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  margin-bottom: 7px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 0 4px rgba(79, 209, 232, 0.25), 0 0 22px rgba(79, 209, 232, 0.9);
+  animation: chipPulse 1.2s ease-in-out infinite;
+}
+
+.mi-site .mi-en {
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(79, 209, 232, 0.5);
+  background: rgba(6, 14, 22, 0.8);
+  color: var(--cyan);
+  font-size: 11.5px;
+}
+
+.mi-street .mi-en {
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  color: var(--text-0);
+}
+
+.mi-street .mi-ar {
+  font-size: 10.5px;
+}
+
+.mi-street.is-main .mi-en {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--amber);
+}
+
+.mi-street.is-main .mi-ar {
+  color: rgba(245, 181, 68, 0.75);
+  font-size: 12px;
+}
+
+.mi-district .mi-en {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.5em;
+  color: rgba(234, 240, 247, 0.85);
+}
+
+.mi-district .mi-ar {
+  font-size: 15px;
+}
+
+.mi-twin {
+  transform-origin: 0 0;
+}
+
+.mi-twin .mi-en {
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(79, 209, 232, 0.14);
+  border: 1px solid rgba(79, 209, 232, 0.45);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+
+.mi-attrib {
+  position: absolute;
+  left: 32px;
+  bottom: 10px;
+  z-index: 2;
+  font-size: 9.5px;
+  color: var(--text-3);
 }
 
 .loader-mark {
@@ -919,6 +1186,15 @@ li.is-done .loader-check {
   font-weight: 300;
   letter-spacing: -0.01em;
   color: var(--text-1);
+}
+
+.intro-place {
+  margin-top: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--cyan);
 }
 
 /* icon-only camera presets */

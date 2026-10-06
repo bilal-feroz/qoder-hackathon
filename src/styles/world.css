@@ -550,3 +550,52 @@
   font-size: 10.5px;
   color: var(--text-2);
 }
+
+/* real street names (StreetNames.tsx) ---------------------------- */
+
+.street-sign,
+.sea-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  font-family: var(--font-sans);
+  white-space: nowrap;
+  user-select: none;
+  pointer-events: none;
+}
+
+.street-sign {
+  padding: 3px 8px 4px;
+  border-radius: 6px;
+  border: 1px solid rgba(148, 172, 204, 0.22);
+  background: rgba(8, 12, 19, 0.72);
+  box-shadow: 0 6px 18px -8px rgba(0, 0, 0, 0.8);
+}
+
+.street-sign-en {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-0);
+}
+
+.street-sign-ar {
+  font-size: 10px;
+  color: var(--text-2);
+}
+
+.sea-label {
+  font-size: 11px;
+  font-style: italic;
+  letter-spacing: 0.22em;
+  color: rgba(130, 200, 228, 0.7);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.9);
+}
+
+.sea-label span[lang='ar'] {
+  font-style: normal;
+  letter-spacing: 0;
+  font-size: 11px;
+  color: rgba(130, 200, 228, 0.55);
+}

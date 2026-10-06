@@ -155,7 +155,7 @@ function PoiBadges() {
   );
 }
 
-/** Riverside Avenue closure-risk overlay (amber → red when projected / burst). */
+/** Hamdan Bin Mohammed Street closure-risk overlay (amber → red when projected / burst). */
 function RoadAlert() {
   const mat = useMemo(
     () =>
@@ -222,7 +222,7 @@ function RoadAlert() {
       <FadeHtml position={[-24, 0.6, 2.5]} opacity={() => live.road} zIndex={23}>
         <div className={`road-chip ${future ? 'is-closed' : ''}`}>
           <Construction size={13} strokeWidth={2.2} />
-          <span>Riverside Ave</span>
+          <span>{INCIDENT.roadShort}</span>
           <b>{future ? 'CLOSED' : 'at risk'}</b>
         </div>
       </FadeHtml>

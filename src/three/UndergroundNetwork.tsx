@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { BoxGeometry, BufferGeometry, Color, CylinderGeometry, EdgesGeometry, Float32BufferAttribute, Group, InstancedMesh, LineBasicMaterial, LineSegments, Matrix4, Quaternion, ShaderMaterial, Vector3, type Intersection, type Raycaster } from 'three';
 import { LAYERS, LAYER_ORDER, NETWORKS, networkLengthKm, type LayerId } from '../data/networks';
 import { SENSORS } from '../data/sensors';
-import { DIORAMA, RIVER, BUILDINGS } from '../data/city';
+import { DIORAMA, SEA, BUILDINGS } from '../data/city';
 import { live } from '../simulation/runtime';
 import { NetworkLayer } from './networks/NetworkLayer';
 import { SensorNodes } from './SensorNodes';
@@ -16,8 +16,8 @@ import { createPropMaterial } from './materials/surfaceMaterials';
 const noRaycast = (_r: Raycaster, _i: Intersection[]) => {};
 
 const PLATE_W = DIORAMA.maxX - DIORAMA.minX;
-const PLATE_D = RIVER.minZ - DIORAMA.minZ;
-const PLATE_CZ = (RIVER.minZ + DIORAMA.minZ) / 2;
+const PLATE_D = SEA.minZ - DIORAMA.minZ;
+const PLATE_CZ = (SEA.minZ + DIORAMA.minZ) / 2;
 
 /** Engineering plate shown under each layer in the exploded view. */
 function ExplodedPlate({ color, y }: { color: string; y: number }) {
@@ -66,7 +66,7 @@ function LayerLabel({ id }: { id: LayerId }) {
   const layer = LAYERS[id];
   const km = networkLengthKm(id).toFixed(1);
   return (
-    <FadeHtml position={[DIORAMA.maxX + 6, layer.depth, RIVER.minZ - 4]} opacity={() => (G.uExploded.value - 0.6) * 2.5} zIndex={20}>
+    <FadeHtml position={[DIORAMA.maxX + 6, layer.depth, SEA.minZ - 4]} opacity={() => (G.uExploded.value - 0.6) * 2.5} zIndex={20}>
       <div className="layer-label" style={{ ['--c' as string]: layer.color }}>
         <span className="layer-label-swatch" />
         <div>
@@ -151,7 +151,7 @@ function AccessShafts() {
 
 function SurfaceLabel() {
   return (
-    <FadeHtml position={[DIORAMA.maxX + 6, 0, RIVER.minZ - 4]} opacity={() => (G.uExploded.value - 0.6) * 2.5} zIndex={20}>
+    <FadeHtml position={[DIORAMA.maxX + 6, 0, SEA.minZ - 4]} opacity={() => (G.uExploded.value - 0.6) * 2.5} zIndex={20}>
       <div className="layer-label" style={{ ['--c' as string]: '#c9d4e2' }}>
         <span className="layer-label-swatch" />
         <div>

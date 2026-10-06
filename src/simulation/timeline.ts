@@ -76,19 +76,19 @@ const CAPTIONS: (Caption & { t: number })[] = [
   { t: T.anomaly, key: 'drift', title: 'Minor sensor deviations', detail: 'Sector B-12 · individually within tolerance', tone: 'info' },
   { t: T.correlate, key: 'correlate', title: 'Correlating sensor signals…', detail: '6 sensors · pressure, moisture, temperature', tone: 'warn' },
   { t: T.pattern, key: 'pattern', title: 'Pattern anomaly detected', detail: 'Sector B-12 · combined signature', tone: 'warn' },
-  { t: T.localize, key: 'localize', title: 'Localizing source', detail: 'Riverside Avenue · ±4 m', tone: 'warn' },
-  { t: T.open, key: 'open', title: 'Opening subsurface view', detail: 'Cross-section · Riverside Avenue', tone: 'info' },
+  { t: T.localize, key: 'localize', title: 'Localizing source', detail: 'Hamdan Bin Mohammed St · ±4 m', tone: 'warn' },
+  { t: T.open, key: 'open', title: 'Opening subsurface view', detail: 'Cross-section · Hamdan Bin Mohammed St', tone: 'info' },
   { t: T.dive, key: 'follow', title: 'Following water main WTR-B12-04', detail: 'Ductile iron · 600 mm · depth 2.1 m', tone: 'warn' },
   { t: T.leak, key: 'leak', title: 'Possible underground water leak', detail: '93% confidence · failure in 36–52 h', tone: 'alert' },
   { t: T.predict, key: 'predict', title: 'Forecasting failure window', detail: 'Degradation model · 72 h horizon', tone: 'alert' },
   { t: T.impact, key: 'impact', title: 'Estimating public impact', detail: '12,400 residents · hospital 320 m', tone: 'alert' },
-  { t: T.plan, key: 'plan', title: 'Recommended: dispatch crew within 6 h', detail: 'Preventive repair · ~$180K', tone: 'warn' },
+  { t: T.plan, key: 'plan', title: 'Recommended: dispatch crew within 6 h', detail: 'Preventive repair · ~AED 660K', tone: 'warn' },
   { t: T.repair, key: 'step1', title: 'Step 1 · Isolate upstream valve', detail: 'V-B12-02 and V-B12-03 closing', tone: 'info' },
   { t: T.reroute, key: 'step2', title: 'Step 2 · Reroute water flow', detail: 'B-12 supplied via the A|B loop', tone: 'info' },
   { t: T.dispatch, key: 'step3', title: 'Step 3 · Dispatch repair crew', detail: 'Crew 07 · ETA 18 min', tone: 'info' },
   { t: T.replace, key: 'step4', title: 'Step 4 · Replace damaged pipe section', detail: 'WTR-B12-04 · 3.2 m section', tone: 'info' },
   { t: T.restore, key: 'step5', title: 'Step 5 · Pressure test and restore', detail: 'Target 3.92 bar', tone: 'info' },
-  { t: T.resolved, key: 'resolved', title: 'Failure prevented', detail: '12,400 residents protected · $1.62M avoided', tone: 'success' },
+  { t: T.resolved, key: 'resolved', title: 'Failure prevented', detail: '12,400 residents protected · AED 5.94M avoided', tone: 'success' },
 ];
 
 export function captionAt(t: number, active: boolean): Caption {

@@ -2,7 +2,7 @@ import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { BoxGeometry, BufferGeometry, Color, ExtrudeGeometry, Float32BufferAttribute, Group, MeshStandardMaterial, Shape, Vector4, type Intersection, type Raycaster } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { DIORAMA, RIVER } from '../data/city';
+import { DIORAMA, SEA } from '../data/city';
 import { G } from './shaders/globals';
 import { GLSL_COMMON } from './shaders/glsl';
 import { patchMaterial, WORLDPOS_FRAG_HEAD, WORLDPOS_VERT_END, WORLDPOS_VERT_HEAD } from './shaders/patch';
@@ -55,16 +55,24 @@ function hull(length: number, width: number, depth: number, color: string, bow =
   return part(g, color);
 }
 
-function barge() {
-  const parts = [hull(6.6, 1.1, 0.42, '#3a1f1c'), bx(6.0, 0.06, 1.0, -0.2, 0.26, 0, '#2a2d31')];
-  const box = ['#b33a2a', '#1f5d8c', '#2e7d4f', '#c8892b', '#6b6f78'];
-  for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) parts.push(bx(1.05, 0.42, 0.44, 1.6 - i * 1.12, 0.5, j ? 0.24 : -0.24, box[(i * 2 + j) % box.length]));
-  parts.push(bx(0.7, 0.62, 0.86, -2.75, 0.62, 0, '#e8eaec'));
-  parts.push(bx(0.72, 0.12, 0.88, -2.75, 0.82, 0, '#1b2733', 0.9));
-  parts.push(bx(0.06, 0.6, 0.06, -2.75, 1.2, 0, '#30343a'));
-  parts.push(bx(0.08, 0.08, 0.08, -2.75, 1.52, 0, '#ffffff', 6));
-  parts.push(bx(0.08, 0.08, 0.08, -2.4, 0.95, 0.46, '#20ff70', 5));
-  parts.push(bx(0.08, 0.08, 0.08, -2.4, 0.95, -0.46, '#ff2a2a', 5));
+/** Wooden dinner-cruise dhow: teak hull with a raised stern, lantern-lit deck house under a canopy. */
+function dhow() {
+  const teak = '#5b3a22';
+  const parts = [hull(6.0, 1.3, 0.46, teak, 0.32), bx(5.2, 0.06, 1.12, -0.3, 0.3, 0, '#7a5232')];
+  // raised stern castle and bow stem
+  parts.push(bx(0.9, 0.34, 1.2, -2.55, 0.5, 0, '#4a2f1b'));
+  parts.push(bx(0.5, 0.14, 0.16, 2.85, 0.55, 0, '#4a2f1b'));
+  parts.push(bx(0.24, 0.12, 0.14, 3.15, 0.66, 0, '#4a2f1b'));
+  // deck house with warm windows, canopy and a string of lights along its edge
+  parts.push(bx(3.4, 0.4, 0.98, -0.3, 0.52, 0, '#eadfc6'));
+  parts.push(bx(3.42, 0.13, 1.0, -0.3, 0.56, 0, '#ffb35c', 1.4));
+  parts.push(bx(3.8, 0.05, 1.22, -0.3, 0.84, 0, '#c9a46a'));
+  for (let i = 0; i < 9; i++) for (const z of [-0.62, 0.62]) parts.push(bx(0.05, 0.05, 0.05, -2.1 + i * 0.45, 0.8, z, '#ffd27a', 4.5));
+  // flag mast and navigation lights
+  parts.push(bx(0.05, 0.9, 0.05, 1.7, 0.75, 0, '#3a2616'));
+  parts.push(bx(0.08, 0.08, 0.08, 1.7, 1.24, 0, '#ffffff', 6));
+  parts.push(bx(0.08, 0.08, 0.08, 1.2, 0.5, 0.6, '#20ff70', 5));
+  parts.push(bx(0.08, 0.08, 0.08, 1.2, 0.5, -0.6, '#ff2a2a', 5));
   return mergeGeometries(parts, false)!;
 }
 
@@ -85,7 +93,7 @@ function launch() {
 }
 
 export const BOATS: BoatDef[] = [
-  { z: 73.6, dir: -1, speed: 0.75, x0: 30, length: 6.6, build: barge },
+  { z: 74.2, dir: -1, speed: 0.75, x0: 30, length: 6.0, build: dhow },
   { z: 80.2, dir: 1, speed: 1.15, x0: -60, length: 3.8, build: tourBoat },
   { z: 76.8, dir: 1, speed: 2.6, x0: 10, length: 1.25, build: launch },
 ];
@@ -128,7 +136,7 @@ function Boats() {
       const bob = Math.sin(t * 1.3 + i * 2.1) * 0.025;
       const g = refs.current[i];
       if (g) {
-        g.position.set(x, RIVER.level + bob, b.z);
+        g.position.set(x, SEA.level + bob, b.z);
         g.rotation.set(Math.sin(t * 0.9 + i) * 0.012, b.dir > 0 ? 0 : Math.PI, Math.sin(t * 1.1 + i * 3.0) * 0.02);
       }
       boatUniform.value[i].set(x, b.z, b.dir, b.length);
@@ -213,12 +221,14 @@ function createWaterMaterial() {
         float amp = 0.06;
         gWaterN = normalize(vec3(-(hx - h0) / e * amp, 1.0, -(hz - h0) / e * amp));
         gWake = wakeAt(rp);
-        float bank = min(rp.y - ${RIVER.minZ.toFixed(1)}, ${RIVER.maxZ.toFixed(1)} - rp.y);
+        // distance from the Corniche quay wall (the far edge is open water)
+        float bank = rp.y - ${SEA.minZ.toFixed(1)};
         float churn = gnoise(rp * 3.0 + vec2(uTime * 0.7, 0.0));
         gFoam = (1.0 - smoothstep(0.0, 0.5 + churn * 0.5, bank)) * 0.7 + clamp(gWake * (0.55 + 0.6 * churn), 0.0, 1.0);
         gFoam = clamp(gFoam, 0.0, 1.0);
-        vec3 deep = vec3(0.012, 0.035, 0.05);
-        vec3 shallow = vec3(0.03, 0.075, 0.085);
+        // warm, shallow Gulf water: teal over the sandy shelf
+        vec3 deep = vec3(0.01, 0.04, 0.05);
+        vec3 shallow = vec3(0.03, 0.09, 0.09);
         vec3 water = mix(deep, shallow, smoothstep(2.0, 0.0, bank) + h0 * 0.06);
         diffuseColor.rgb = mix(water, vec3(0.55, 0.6, 0.62), gFoam * 0.8);
       }
@@ -233,8 +243,8 @@ function createWaterMaterial() {
         // lamp's mirror image meets the surface, smeared towards the viewer by the waves
         float refl = 0.0;
         for (int k = 0; k < 15; k++) {
-          vec3 Lm = vec3(-70.0 + float(k) * 10.0, 2.0 * ${RIVER.level.toFixed(2)} - 1.75, 64.2);
-          float tt = (${RIVER.level.toFixed(2)} - cameraPosition.y) / (Lm.y - cameraPosition.y);
+          vec3 Lm = vec3(-70.0 + float(k) * 10.0, 2.0 * ${SEA.level.toFixed(2)} - 1.75, 64.2);
+          float tt = (${SEA.level.toFixed(2)} - cameraPosition.y) / (Lm.y - cameraPosition.y);
           vec2 W = cameraPosition.xz + (Lm.xz - cameraPosition.xz) * tt;
           vec2 dir = normalize(cameraPosition.xz - W + vec2(1e-4));
           vec2 q = rp - W;
@@ -247,7 +257,7 @@ function createWaterMaterial() {
         }
         totalEmissiveRadiance += vec3(1.0, 0.74, 0.44) * refl * 0.8 * (1.0 - gFoam) * (1.0 - uXray);
         // dusk sky sheen + warm city glow on the near bank
-        float near = rp.y - ${RIVER.minZ.toFixed(1)};
+        float near = rp.y - ${SEA.minZ.toFixed(1)};
         totalEmissiveRadiance += vec3(0.018, 0.03, 0.055) * (1.0 - uXray);
         totalEmissiveRadiance += vec3(0.9, 0.6, 0.35) * 0.02 * exp(-near * 0.3) * (1.0 - uXray);
       }
@@ -256,23 +266,27 @@ function createWaterMaterial() {
   });
 }
 
-export function River() {
+export function Sea() {
   const mat = useMemo(() => createWaterMaterial(), []);
-  const side = useMemo(() => createPropMaterial({ color: '#0e3a52', roughness: 0.2, metalness: 0.2, opacity: 0.7, emissive: '#06283a', emissiveIntensity: 0.6 }), []);
+  const side = useMemo(() => createPropMaterial({ color: '#0e4652', roughness: 0.2, metalness: 0.2, opacity: 0.7, emissive: '#06303a', emissiveIntensity: 0.6 }), []);
   const w = DIORAMA.maxX - DIORAMA.minX;
-  const d = RIVER.maxZ - RIVER.minZ;
-  const cz = (RIVER.minZ + RIVER.maxZ) / 2;
-  const h = RIVER.level - RIVER.bed;
+  const d = SEA.maxZ - SEA.minZ;
+  const cz = (SEA.minZ + SEA.maxZ) / 2;
+  const h = SEA.level - SEA.bed;
   return (
     <group>
-      <mesh rotation-x={-Math.PI / 2} position={[0, RIVER.level, cz]} material={mat} receiveShadow raycast={noRaycast}>
+      <mesh rotation-x={-Math.PI / 2} position={[0, SEA.level, cz]} material={mat} receiveShadow raycast={noRaycast}>
         <planeGeometry args={[w, d, 1, 1]} />
       </mesh>
-      <mesh position={[DIORAMA.minX, RIVER.bed + h / 2, cz]} rotation-y={-Math.PI / 2} material={side} raycast={noRaycast}>
+      <mesh position={[DIORAMA.minX, SEA.bed + h / 2, cz]} rotation-y={-Math.PI / 2} material={side} raycast={noRaycast}>
         <planeGeometry args={[d, h]} />
       </mesh>
-      <mesh position={[DIORAMA.maxX, RIVER.bed + h / 2, cz]} rotation-y={Math.PI / 2} material={side} raycast={noRaycast}>
+      <mesh position={[DIORAMA.maxX, SEA.bed + h / 2, cz]} rotation-y={Math.PI / 2} material={side} raycast={noRaycast}>
         <planeGeometry args={[d, h]} />
+      </mesh>
+      {/* open-water edge of the slab */}
+      <mesh position={[0, SEA.bed + h / 2, SEA.maxZ]} material={side} raycast={noRaycast}>
+        <planeGeometry args={[w, h]} />
       </mesh>
       <Boats />
     </group>

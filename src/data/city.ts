@@ -1,14 +1,19 @@
 import { mulberry32, range, pick, type Rng } from './rng';
 
 /**
- * City layout for the "Riverside District" digital twin.
+ * City layout for the Al Danah digital twin (downtown Abu Dhabi Island, UAE).
  *
  * World units: 1 unit ≈ 10 m horizontally. Underground depths are vertically
  * exaggerated so the utility layers stay legible from a city-scale camera.
  *
- *  +x → east, +z → south (the river runs along the southern edge).
- *  Sector grid: rows A–D (north → south), columns 10–14 (west → east).
- *  B-12 is the centre block, directly north of Riverside Avenue.
+ * The grid follows the real street grid (see src/data/geo.ts for the names and the
+ * mapping onto the map):
+ *  +z → towards the Corniche and the Arabian Gulf (real north-west),
+ *  +x → south-west along Hamdan Bin Mohammed Street.
+ *  E-W streets (z): local · Zayed The First St · Hamdan Bin Mohammed St · Khalifa Bin Zayed The First St · Corniche St
+ *  N-S streets (x): local · Saeed Bin Ahmed Al Otaiba St · local · Sultan Bin Zayed The First St · local · local
+ *  Sector grid (the twin's own asset grid): rows A–D (inland → Gulf), columns 10–14.
+ *  B-12 is the centre block, on the inland side of Hamdan Bin Mohammed Street.
  */
 
 export const UNIT_METERS = 10;
@@ -24,7 +29,7 @@ export const PLINTH_H = 0.12;
 /** N-S street centre lines (x) and E-W street centre lines (z). */
 export const STREET_X = [-70, -42, -14, 14, 42, 70] as const;
 export const STREET_Z = [-58, -30, 0, 30, 58] as const;
-/** Corridor widths (kerb to kerb incl. sidewalks). Riverside Avenue (z = 0) is the wide one. */
+/** Corridor widths (kerb to kerb incl. sidewalks). Hamdan Bin Mohammed Street (z = 0) is the wide one. */
 export const STREET_X_W = [8, 8, 8, 8, 8, 8] as const;
 export const STREET_Z_W = [8, 8, 12, 8, 8] as const;
 
@@ -46,9 +51,8 @@ export const DIORAMA = {
   bottom: -14,
 } as const;
 
-export const RIVER = { minZ: 68, maxZ: 86, bed: -2.4, level: -1.15 } as const;
-
-export const RIVERSIDE_AVENUE_Z = 0;
+/** The Arabian Gulf off the Corniche: open water from the quay wall to the edge of the slab. */
+export const SEA = { minZ: 68, maxZ: DIORAMA.maxZ, bed: -2.4, level: -1.15 } as const;
 
 export type SectorKind = 'urban' | 'park' | 'yard' | 'campus';
 
@@ -120,7 +124,8 @@ export type BuildingKind =
   | 'substation'
   | 'cooling'
   | 'telecom'
-  | 'civic';
+  | 'civic'
+  | 'mosque';
 
 export interface Tier {
   x: number;
@@ -172,6 +177,7 @@ const KIND_LABEL: Record<BuildingKind, string> = {
   cooling: 'District cooling plant',
   telecom: 'Telecom exchange',
   civic: 'Civic building',
+  mosque: 'Mosque',
 };
 
 type Profile = 'cbd' | 'residential-high' | 'mixed' | 'low' | 'residential-mid';
@@ -277,34 +283,35 @@ function kindFor(profile: Profile, rng: Rng): BuildingKind {
   }
 }
 
+/** Downtown Abu Dhabi palette: sand, cream and white render, pale stone, blue-green and silver glass. */
 const TINTS: Record<number, [number, number, number][]> = {
-  // curtain-wall glass: blue-green, bronze, silver
+  // curtain-wall glass: teal, blue, silver, bronze
   [STYLE.glass]: [
-    [0.22, 0.32, 0.36],
-    [0.34, 0.29, 0.24],
-    [0.36, 0.39, 0.43],
-    [0.2, 0.27, 0.36],
+    [0.2, 0.33, 0.36],
+    [0.21, 0.29, 0.38],
+    [0.36, 0.4, 0.43],
+    [0.34, 0.3, 0.25],
   ],
-  // exposed concrete
+  // pale concrete / precast
   [STYLE.concrete]: [
-    [0.44, 0.44, 0.45],
-    [0.39, 0.39, 0.38],
-    [0.5, 0.48, 0.45],
+    [0.52, 0.5, 0.46],
+    [0.47, 0.45, 0.42],
+    [0.56, 0.53, 0.48],
   ],
-  // rendered residential: warm beige, grey, sand, muted blue-grey
+  // rendered residential: sand, cream, beige, off-white, desert rose
   [STYLE.residential]: [
-    [0.58, 0.52, 0.45],
-    [0.47, 0.46, 0.45],
-    [0.62, 0.57, 0.49],
-    [0.44, 0.45, 0.5],
-    [0.6, 0.47, 0.4],
+    [0.66, 0.59, 0.49],
+    [0.7, 0.66, 0.58],
+    [0.61, 0.55, 0.46],
+    [0.72, 0.71, 0.67],
+    [0.64, 0.53, 0.44],
   ],
-  [STYLE.white]: [[0.8, 0.82, 0.84]],
-  // brick
+  [STYLE.white]: [[0.8, 0.82, 0.82]],
+  // stone cladding (the facade shader lays it as a running bond)
   [STYLE.warm]: [
-    [0.46, 0.25, 0.18],
-    [0.4, 0.23, 0.17],
-    [0.52, 0.36, 0.26],
+    [0.66, 0.57, 0.44],
+    [0.6, 0.52, 0.41],
+    [0.7, 0.63, 0.5],
   ],
   [STYLE.industrial]: [
     [0.4, 0.42, 0.44],
@@ -321,20 +328,45 @@ function makeCode(sector: string) {
   return `BLD-${sector.replace('-', '')}-${String(n).padStart(2, '0')}`;
 }
 
+function occupancy(kind: BuildingKind, height: number, tiers: Tier[]) {
+  const floors = Math.max(1, Math.round(height / 0.42));
+  const footprint = tiers.reduce((acc, t) => acc + t.w * t.d * (t.h / Math.max(height, 0.001)), 0);
+  const perFloor = kind === 'residential' ? 1.15 : kind === 'mixed' ? 0.75 : kind === 'office' ? 0.08 : 0;
+  return { floors, occupants: Math.round(floors * footprint * perFloor) };
+}
+
 function makeBuilding(partial: Omit<Building, 'id' | 'code' | 'floors' | 'occupants' | 'name' | 'tint'> & { name?: string; tint?: [number, number, number] }, rng: Rng): Building {
   const tints = TINTS[partial.style] ?? TINTS[STYLE.concrete];
-  const floors = Math.max(1, Math.round(partial.height / 0.42));
-  const footprint = partial.tiers.reduce((acc, t) => acc + t.w * t.d * (t.h / Math.max(partial.height, 0.001)), 0);
-  const perFloor = partial.kind === 'residential' ? 1.15 : partial.kind === 'mixed' ? 0.75 : partial.kind === 'office' ? 0.08 : 0;
   return {
     ...partial,
     id: nextBuildingId++,
     code: makeCode(partial.sector),
     name: partial.name ?? KIND_LABEL[partial.kind],
     tint: partial.tint ?? pick(rng, tints),
-    floors,
-    occupants: Math.round(floors * footprint * perFloor),
+    ...occupancy(partial.kind, partial.height, partial.tiers),
   };
+}
+
+/** Turns a CBD tower into the district's ~330 m signature tower: tapering setbacks under a spire. */
+function makeLandmark(b: Building) {
+  const base = b.tiers[0];
+  const steps: [number, number, number][] = [
+    // [footprint scale, from, to]
+    [1, 0, 2.4],
+    [0.74, 2.4, 18],
+    [0.62, 18, 26],
+    [0.5, 26, 30.6],
+    [0.36, 30.6, 33],
+  ];
+  b.tiers = steps.map(([k, y0, y1]) => ({ x: base.x, z: base.z, w: base.w * k, d: base.d * k, y0, h: y1 - y0 }));
+  b.height = 33;
+  b.roof = [{ type: 'spire', x: base.x, z: base.z, y0: 33, w: 0.12, d: 0.12, h: 5 }];
+  b.kind = 'office';
+  b.style = STYLE.glass;
+  b.tint = [0.2, 0.33, 0.37];
+  b.lit = 0.3;
+  b.special = true;
+  Object.assign(b, occupancy(b.kind, b.height, b.tiers));
 }
 
 function towerTiers(cx: number, cz: number, w: number, d: number, h: number, rng: Rng, profile: Profile): Tier[] {
@@ -435,7 +467,7 @@ function generateRegularBlock(sectorId: string, bx: number, bz: number, profile:
 /* ---------------- special buildings ---------------- */
 
 export interface SpecialSite {
-  key: 'hospital' | 'school' | 'depot' | 'pumping' | 'substation' | 'cooling' | 'telecom';
+  key: 'hospital' | 'school' | 'depot' | 'pumping' | 'substation' | 'cooling' | 'telecom' | 'mosque';
   name: string;
   sector: string;
   x: number;
@@ -450,23 +482,39 @@ export const SUBSTATION_POS = { x: 56, z: -44 };
 export const COOLING_PLANT_POS = { x: -31, z: -19 };
 export const EXCHANGE_POS = { x: -58, z: -46 };
 
+/**
+ * Neighbourhood mosque on the Corniche side of Khalifa Bin Zayed The First Street (D-12).
+ * Like many mosques on Abu Dhabi's grid it sits askew to the streets: the prayer hall's
+ * qibla wall (local +x) faces Mecca, bearing ≈ 260° from Al Danah, which is 27.8° from the
+ * scene's +x (bearing 232.2°) towards +z.
+ */
+export const MOSQUE = {
+  x: -4.4,
+  z: 44.2,
+  yaw: -0.4855,
+  hall: { along: 4.6, across: 5.4, h: 1.25 },
+  court: 2.6,
+  minaret: 4.8,
+} as const;
+
 export const SITES: SpecialSite[] = [
-  { key: 'hospital', name: 'Central Medical Center', sector: 'B-13', ...HOSPITAL_POS },
-  { key: 'school', name: 'Riverside Academy', sector: 'A-11', ...SCHOOL_POS },
-  { key: 'depot', name: 'Utility Operations Depot', sector: 'D-14', ...DEPOT_POS },
-  { key: 'pumping', name: 'Riverside Pumping Station', sector: 'D-11', ...PUMP_POS },
-  { key: 'substation', name: 'Substation North-East', sector: 'A-14', ...SUBSTATION_POS },
-  { key: 'cooling', name: 'District Cooling Plant', sector: 'B-11', ...COOLING_PLANT_POS },
-  { key: 'telecom', name: 'Telecom Exchange', sector: 'A-10', ...EXCHANGE_POS },
+  { key: 'hospital', name: 'General hospital', sector: 'B-13', ...HOSPITAL_POS },
+  { key: 'school', name: 'Public school', sector: 'A-11', ...SCHOOL_POS },
+  { key: 'depot', name: 'Utility operations depot', sector: 'D-14', ...DEPOT_POS },
+  { key: 'pumping', name: 'Water pumping station', sector: 'D-11', ...PUMP_POS },
+  { key: 'substation', name: 'Electrical substation', sector: 'A-14', ...SUBSTATION_POS },
+  { key: 'cooling', name: 'District cooling plant', sector: 'B-11', ...COOLING_PLANT_POS },
+  { key: 'telecom', name: 'Telecom exchange', sector: 'A-10', ...EXCHANGE_POS },
+  { key: 'mosque', name: 'Mosque', sector: 'D-12', x: MOSQUE.x, z: MOSQUE.z },
 ];
 
 function generateSpecials(rng: Rng): Building[] {
   const out: Building[] = [];
-  // Central Medical Center — white podium + slab tower (B-13)
+  // General hospital — white podium + slab tower (B-13)
   out.push(
     makeBuilding(
       {
-        name: 'Central Medical Center',
+        name: 'General hospital',
         kind: 'hospital',
         sector: 'B-13',
         x: HOSPITAL_POS.x,
@@ -485,11 +533,11 @@ function generateSpecials(rng: Rng): Building[] {
       rng,
     ),
   );
-  // Riverside Academy — L-shaped low campus (A-11)
+  // Public school — L-shaped low campus (A-11)
   out.push(
     makeBuilding(
       {
-        name: 'Riverside Academy',
+        name: 'Public school',
         kind: 'school',
         sector: 'A-11',
         x: SCHOOL_POS.x,
@@ -507,11 +555,11 @@ function generateSpecials(rng: Rng): Building[] {
       rng,
     ),
   );
-  // Utility Operations Depot — shed + office (D-14)
+  // Utility operations depot — shed + office (D-14)
   out.push(
     makeBuilding(
       {
-        name: 'Utility Operations Depot',
+        name: 'Utility operations depot',
         kind: 'depot',
         sector: 'D-14',
         x: DEPOT_POS.x,
@@ -533,7 +581,7 @@ function generateSpecials(rng: Rng): Building[] {
   out.push(
     makeBuilding(
       {
-        name: 'Riverside Pumping Station',
+        name: 'Water pumping station',
         kind: 'pumping',
         sector: 'D-11',
         x: PUMP_POS.x,
@@ -552,7 +600,7 @@ function generateSpecials(rng: Rng): Building[] {
   out.push(
     makeBuilding(
       {
-        name: 'Substation North-East',
+        name: 'Electrical substation',
         kind: 'substation',
         sector: 'A-14',
         x: SUBSTATION_POS.x,
@@ -571,7 +619,7 @@ function generateSpecials(rng: Rng): Building[] {
   out.push(
     makeBuilding(
       {
-        name: 'District Cooling Plant',
+        name: 'District cooling plant',
         kind: 'cooling',
         sector: 'B-11',
         x: COOLING_PLANT_POS.x,
@@ -590,7 +638,7 @@ function generateSpecials(rng: Rng): Building[] {
   out.push(
     makeBuilding(
       {
-        name: 'Telecom Exchange',
+        name: 'Telecom exchange',
         kind: 'telecom',
         sector: 'A-10',
         x: EXCHANGE_POS.x,
@@ -685,8 +733,31 @@ function generateCity(): Building[] {
     const profile = BLOCK_PROFILE[s.id];
     if (!profile) continue;
     if (['A-10', 'B-11', 'D-11'].includes(s.id)) continue; // handled as partial blocks
-    buildings.push(...generateRegularBlock(s.id, s.x, s.z, profile, rng, templates[s.id]));
+    let block = generateRegularBlock(s.id, s.x, s.z, profile, rng, templates[s.id]);
+    // D-12: the mosque and its Corniche-side forecourt take the (−x) half and the bar lot;
+    // the block is still generated in full so the random sequence for later blocks is unchanged
+    if (s.id === 'D-12') block = block.filter((b) => b.x > s.x && b.z < s.z + 4.5);
+    buildings.push(...block);
   }
+  makeLandmark(buildings.filter((b) => b.sector === 'A-12').sort((a, b) => b.height - a.height)[0]);
+  buildings.push(
+    makeBuilding(
+      {
+        kind: 'mosque',
+        sector: 'D-12',
+        x: MOSQUE.x,
+        z: MOSQUE.z,
+        height: MOSQUE.minaret,
+        style: STYLE.white,
+        tint: [0.86, 0.84, 0.8],
+        tiers: [], // drawn by three/Mosque.tsx (it sits askew to the grid, facing the qibla)
+        roof: [],
+        lit: 0,
+        special: true,
+      },
+      rng,
+    ),
+  );
   return buildings;
 }
 

@@ -24,7 +24,7 @@ function buildLamps(): Lamp[] {
       lamps.push({ x: s.x + off, z: s.z + a, ox: 1, oz: 0 });
     }
   }
-  // riverside promenade
+  // Corniche promenade
   for (let x = -70; x <= 70; x += 10) lamps.push({ x, z: 64.2, ox: 0, oz: -1 });
   return lamps;
 }

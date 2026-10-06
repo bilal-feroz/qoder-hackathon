@@ -5,6 +5,7 @@ import { StatusChip, type ChipTone } from '../ui/StatusChip';
 import { PROJECTED_48H } from '../../simulation/telemetry';
 import { EXPLAIN_FEATURES, INCIDENT } from '../../data/incident';
 import { useAnimatedNumber } from '../../hooks/useAnimatedNumber';
+import { LocatorCard } from './LocatorCard';
 
 const sign = (v: number, d = 1) => `${v > 0.049 ? '+' : v < -0.049 ? '−' : '±'}${Math.abs(v).toFixed(d)}`;
 
@@ -145,6 +146,7 @@ export function SignalRail() {
         />
       </div>
       <WhyAlert />
+      <LocatorCard />
     </div>
   );
 }

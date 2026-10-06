@@ -15,7 +15,8 @@ export interface PathShot {
 }
 
 export const POSES: Record<Exclude<ShotId, 'dive'>, Pose> = {
-  intro: { pos: [-150, 230, 270], target: [0, -6, 0], duration: 0 },
+  // straight down onto the slab, inland (−z) up — the opening map zoom ends on exactly this view
+  intro: { pos: [0, 352, 15.5], target: [0, 0, 0], duration: 0 },
   city: { pos: [78, 82, 128], target: [0, -6, 10], duration: 2.4 },
   outro: { pos: [78, 82, 128], target: [0, -6, 10], duration: 5.2 },
   sector: { pos: [34, 33, 47], target: [2, 0, -10], duration: 2.8 },

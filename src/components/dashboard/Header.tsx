@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Info, Layers, LayoutGrid, PlayCircle } from 'lucide-react';
 import { useTwinStore } from '../../store/useTwinStore';
 import { useDismiss } from '../../hooks/useDismiss';
+import { PLACE } from '../../data/geo';
 
 function LogoMark() {
   return (
@@ -20,8 +21,9 @@ function Clock() {
     return () => clearInterval(id);
   }, []);
   return (
-    <div className="hdr-clock">
-      <span className="mono tnum">{now.toLocaleTimeString('en-GB', { hour12: false })}</span>
+    <div className="hdr-clock" title={`${PLACE.city} local time (Gulf Standard Time, UTC+4)`}>
+      <span className="mono tnum">{now.toLocaleTimeString('en-GB', { hour12: false, timeZone: PLACE.timeZone })}</span>
+      <span className="hdr-tz">{PLACE.timeZoneLabel}</span>
     </div>
   );
 }

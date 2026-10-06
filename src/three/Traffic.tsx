@@ -234,7 +234,7 @@ function MovingTraffic() {
 /* ------------------------------------------------------------------ */
 
 const PARK_EXCLUDE = [
-  // the excavation on Riverside Avenue + its approaches
+  // the excavation on Hamdan Bin Mohammed Street + its approaches
   { minX: TRENCH.minX - 2.5, maxX: TRENCH.maxX + 2.5, minZ: -5, maxZ: 5 },
   // crew truck stand
   { minX: 15.6, maxX: 17.2, minZ: 5, maxZ: 13.5 },

@@ -88,6 +88,31 @@ The point of the product: *the city never visibly breaks*, because people act be
 
 ---
 
+## Where it is — Al Danah, Abu Dhabi
+
+The twin is set in **Al Danah**, downtown Abu Dhabi Island, on the real street grid:
+
+| Twin street | Real street (official Onwani name) | Also known as |
+| --- | --- | --- |
+| Incident street (wide E-W avenue) | **Hamdan Bin Mohammed Street** · شارع حمدان بن محمد | Hamdan Street, 5th Street |
+| Next street inland | Zayed The First Street · شارع زايد الأول | Electra Street |
+| Next street towards the sea | Khalifa Bin Zayed The First Street · شارع خليفة بن زايد الأول | Khalifa Street |
+| Waterfront | Corniche Street · شارع الكورنيش, then the Arabian Gulf | Corniche Road |
+| Cross street east of B-12 | Sultan Bin Zayed The First Street · شارع سلطان بن زايد الأول | Muroor Road |
+| Cross street two blocks west | Saeed Bin Ahmed Al Otaiba Street · شارع سعيد بن أحمد العتيبة | Delma Street (renamed 2022) |
+
+* **Opening map** — while the twin loads, a map of the UAE (seven emirates, Arabic and English names) zooms to Abu Dhabi Island and
+  then to the real Al Danah street grid, rotating to the twin's orientation and handing over to the 3D city on the same view.
+* **Location card** — bottom of the left rail: UAE overview with a lens on Abu Dhabi Island and the twin's site
+  (it turns red while an incident is live), plus coordinates. The header clock shows Abu Dhabi time (GST, UTC+4).
+* **The city** — sand, stone and white facades, blue-green glass, a ~330 m signature tower, a neighbourhood mosque turned to face
+  the qibla, date palms along the streets and the Corniche, a dhow on the Gulf, and the real street names in English and Arabic.
+* **Honest about the model** — the street grid, names and orientation are real; the blocks are slightly compressed (≈10.5 m per
+  twin unit, the Corniche block more so), and the buildings, utilities, sectors (`B-12`…) and incident are the twin's own fiction.
+  Building names are generic (General hospital, Public school…) rather than real institutions.
+
+---
+
 ## Quick start
 
 Requires Node.js 18+ (tested with Node 22).
@@ -113,9 +138,10 @@ npm run typecheck  # TypeScript only
 
 | Area | Purpose |
 | --- | --- |
-| **Center — 3D twin** | Procedural city (56 buildings, roads, park, river, hospital, school, depot, pumping station, substation, cooling plant) sitting on a cut-away soil slab. Beneath it, five utility networks at believable depths with real elbows, junctions, flanges, valves, risers, access shafts and 24 sensors. |
-| **Left — Live signals** | Pressure, moisture, temperature and network health with sparklines; during an alert, a compact *why* panel (feature contributions → combined confidence). |
-| **Right — AI recommendation** | Monitoring → analyzing → *INTERVENE* (action, residents, hospital distance, $180K repair vs $1.62M saved) → repair steps → *FAILURE PREVENTED*. |
+| **Opening** | Map zoom: UAE → Abu Dhabi Island → Al Danah street grid → the 3D twin (click or any key skips). |
+| **Center — 3D twin** | Al Danah, Abu Dhabi (55 buildings incl. a mosque and a signature tower, palm-lined streets, park, the Corniche and the Arabian Gulf, hospital, school, depot, pumping station, substation, district cooling plant) on a cut-away soil slab. Beneath it, five utility networks at believable depths with real elbows, junctions, flanges, valves, risers, access shafts and 24 sensors. |
+| **Left — Live signals** | Pressure, moisture, temperature and network health with sparklines; during an alert, a compact *why* panel (feature contributions → combined confidence); the location card at the bottom. |
+| **Right — AI recommendation** | Monitoring → analyzing → *INTERVENE* (action, residents, hospital distance, AED 660K repair vs AED 5.94M saved) → repair steps → *FAILURE PREVENTED*. |
 | **Bottom — Playback bar** | Play / reset / skip plus the 4-stage AI pipeline (Detect → Predict → Prioritize → Plan). A small forecast card (NOW → 72 h, 36–52 h window) appears only while a failure is predicted. |
 
 ---
@@ -130,7 +156,7 @@ npm run typecheck  # TypeScript only
 | X-ray | See through the city to the luminous networks (**X**) |
 | Exploded view | Separate surface / electricity / telecom / water / cooling / sewage like an engineering diagram (**E**) |
 | Layers | Emphasize one network (others dim) or hide networks (**L** toggles the panel) |
-| NOW / +48H | After a failure is predicted, simulate the city 48 h later if nothing is done: the main bursts (T+44 h), Riverside Avenue closes and ~20,200 residents are affected (**F**) |
+| NOW / +48H | After a failure is predicted, simulate the city 48 h later if nothing is done: the main bursts (T+44 h), Hamdan Bin Mohammed Street closes and ~20,200 residents are affected (**F**) |
 | Compare outcomes | After the repair: *No intervention* vs *AI-guided intervention* |
 | Scenario | Run / pause (**Space**), reset (**R**), skip to incident, click the progress bar to seek |
 | Esc | Close cards, comparison and popovers |
@@ -145,7 +171,7 @@ npm run typecheck  # TypeScript only
 | 2.5 s | Pressure, moisture and temperature begin to drift — amber, *individually within tolerance* |
 | 7 s | *Correlating sensor signals…* — data links arc between the B-12 sensors |
 | 10 s | *Pattern anomaly detected* — camera flies to Sector B-12, sector outline glows |
-| 12.5 s | Source localized on Riverside Avenue (reticle) |
+| 12.5 s | Source localized on Hamdan Bin Mohammed Street (reticle) |
 | 15 s | The road surface peels away tile by tile, revealing an excavation; the city turns X-ray |
 | 18 s | Camera dives into the cut and follows water main WTR-B12-04 |
 | 22.5 s | Fracture, spray and wet soil — **POSSIBLE WATER LEAK · 93 % · 36–52 h** |
@@ -154,7 +180,7 @@ npm run typecheck  # TypeScript only
 | 34 s | **INTERVENE — dispatch maintenance crew within 6 h** |
 | 37.5 s | Valves V-B12-02 / V-B12-03 close, the isolated section turns red |
 | 39.5 s | Water rerouted around B-12 through the A\|B loop (cyan) |
-| 41.5 s | Crew 07 dispatched from the Utility Operations Depot along a dotted route |
+| 41.5 s | Crew 07 dispatched from the utility operations depot along a dotted route |
 | 44.5 s | Section replaced (red → amber), leak stops |
 | 46.5 s | Pressure test, valves reopen (→ cyan), pressure recovers |
 | 48.5 s | **FAILURE PREVENTED** — risk 87 → 21, the ground closes, camera pulls back to a healthy city |
@@ -169,10 +195,12 @@ Everything is a pure function of the scenario clock, so pause / seek / skip are 
 src/
   app/            App shell, layout, asset descriptions for cards
   components/
-    dashboard/    Header, SignalRail, RecommendationPanel, IntelStrip
-    overlay/      Layers, view toggles, camera presets, caption, transport, compare, +48H, tooltip, boot
+    dashboard/    Header, SignalRail, LocatorCard, RecommendationPanel, IntelStrip
+    overlay/      Layers, view toggles, camera presets, caption, transport, compare, +48H, tooltip, boot, MapIntro
+    geo/          SVG map layers (UAE, Abu Dhabi coastline, Al Danah streets, twin footprint)
     ui/           Sparkline, status chips, asset card body
   data/           City layout & procedural buildings, utility network graphs, sensors, incident constants, camera poses
+    geo.ts        Real places, street names, scene ↔ map mapping; geoPaths.ts holds the pre-projected map geometry
   simulation/
     timeline.ts   Scenario beats, phases, captions, easing helpers
     telemetry.ts  Deterministic telemetry model (no Math.random)
@@ -183,7 +211,7 @@ src/
     CityScene.tsx            Scene composition, async shader warm-up
     SimulationDriver.tsx     Clock → events → damped visual state → shared uniforms
     CameraRig.tsx            Cinematic tweens, scripted dive spline, view offset between panels
-    Ground / CityBuildings / SpecialProps / StreetFurniture / Traffic
+    Ground / Sea / CityBuildings / SpecialProps / Mosque / StreetFurniture / Vegetation / Traffic / StreetNames
     Cutaway.tsx              Lifting road tiles + strata trench walls
     UndergroundNetwork.tsx   Per-layer groups (exploded view), shafts, plates, labels
     networks/                Network graph → instanced pipes/elbows/hubs/flanges; flow shader; selected-pipe glass + particles
@@ -211,6 +239,14 @@ Vite · React 19 · TypeScript · Three.js r186 · @react-three/fiber · @react-
 @react-three/postprocessing · Zustand · Lucide icons · Inter & JetBrains Mono (bundled via Fontsource, works offline).
 
 No paid APIs, no API keys, no external services, no external models or textures — the whole city is procedural.
+The map geometry is bundled with the app (no map tiles or map APIs at runtime).
+
+### Map data
+
+* Country outlines — [Natural Earth](https://www.naturalearthdata.com/) 1:10m (public domain), via `world-atlas`.
+  Abu Musa, Greater Tunb and Lesser Tunb are drawn as UAE territory, as on UAE official maps.
+* Abu Dhabi coastline, Al Danah streets, street names and route numbers — © [OpenStreetMap](https://www.openstreetmap.org/copyright)
+  contributors, available under the ODbL (Overpass API extract, October 2026). The attribution is shown in the app.
 
 ---
 
@@ -221,7 +257,8 @@ All of it:
 * **Telemetry** — baselines with smooth deterministic noise (sum of sines over wall time) plus scripted incident deviations.
 * **Assets** — network graphs, IDs (e.g. `WTR-B12-04`, `V-B12-02`, `P-17`), materials, diameters, install years, health scores.
 * **Population** — procedural building occupancy, calibrated so residents inside the impact radius total 12,400.
-* **Costs & forecasts** — $180K preventive (range $120K–$250K), $1.8M failure consequence, 36–52 h failure window, 93 % confidence.
+* **Costs & forecasts** — AED 660K preventive (range AED 440K–920K), AED 6.6M failure consequence, 36–52 h failure window,
+  93 % confidence (UAE dirhams; the earlier USD figures converted at the 3.6725 peg).
 
 These figures are illustrative, labelled *Demo simulation* in the UI, and not measurements.
 

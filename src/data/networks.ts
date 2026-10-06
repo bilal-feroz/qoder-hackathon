@@ -1,4 +1,4 @@
-import { STREET_X, STREET_Z, DIORAMA, RIVER, sectorAt, PUMP_POS, SUBSTATION_POS, EXCHANGE_POS, COOLING_PLANT_POS, UNIT_METERS } from './city';
+import { STREET_X, STREET_Z, DIORAMA, SEA, sectorAt, PUMP_POS, SUBSTATION_POS, EXCHANGE_POS, COOLING_PLANT_POS, UNIT_METERS } from './city';
 import { mulberry32, hashString } from './rng';
 
 export type LayerId = 'electric' | 'telecom' | 'water' | 'cooling' | 'sewage';
@@ -384,7 +384,7 @@ function build(layerId: LayerId, variant: 'main' | 'supply' | 'return', offset: 
   const nodes: NetNode[] = keys.map((k) => {
     const p = b.nodes.get(k)!;
     const edges = segments.filter((s) => key(s.a[0], s.a[1]) === k || key(s.b[0], s.b[1]) === k).map((s) => s.index);
-    const boundary = Math.abs(p.x - DIORAMA.minX) < 1e-3 || Math.abs(p.x - DIORAMA.maxX) < 1e-3 || Math.abs(p.z - DIORAMA.minZ) < 1e-3 || Math.abs(p.z - RIVER.minZ) < 1e-3;
+    const boundary = Math.abs(p.x - DIORAMA.minX) < 1e-3 || Math.abs(p.x - DIORAMA.maxX) < 1e-3 || Math.abs(p.z - DIORAMA.minZ) < 1e-3 || Math.abs(p.z - SEA.minZ) < 1e-3;
     return { key: k, x: p.x, z: p.z, y: layer.depth, edges, boundary };
   });
 
@@ -410,11 +410,14 @@ const WATER = build('water', 'main', LAYERS.water.offset, (b) => {
     b.stubE(j);
   });
   [2, 3].forEach((i) => b.stubN(i));
-  // pumping station: connector to the trunk + river intake
+  // pumping station: connector to the trunk + the transmission main that brings desalinated
+  // water in under the Corniche promenade
   const px = PUMP_POS.x;
   const pz = 46;
+  const promenadeZ = SEA.minZ - 5;
   b.edge(px, pz, b.lx(2), pz, true, 1.1);
-  b.edge(px, pz, px, RIVER.minZ, true, 1.1);
+  b.edge(px, pz, px, promenadeZ, true, 1.1);
+  b.edge(px, promenadeZ, DIORAMA.minX, promenadeZ, true, 1.1);
   b.riser(px, pz);
   return { source: [px, pz] };
 });

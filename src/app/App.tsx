@@ -5,6 +5,7 @@ import { Activity, ShieldCheck } from 'lucide-react';
 import { CityScene } from '../three/CityScene';
 import { viewInsets } from '../three/CameraRig';
 import { EXPOSURE } from '../three/sceneConfig';
+import { POSES } from '../data/cameras';
 import { useTwinStore } from '../store/useTwinStore';
 import { Header } from '../components/dashboard/Header';
 import { SignalRail } from '../components/dashboard/SignalRail';
@@ -22,6 +23,7 @@ import '../styles/layout.css';
 import '../styles/panels.css';
 import '../styles/overlays.css';
 import '../styles/world.css';
+import '../styles/geo.css';
 
 function useViewportInsets(ref: React.RefObject<HTMLDivElement | null>) {
   useEffect(() => {
@@ -64,11 +66,11 @@ export function App() {
 
   return (
     <div className={`app boot-${boot} ${compact ? 'is-compact' : ''} ${drawer ? `drawer-${drawer}` : ''} phase-${phase.toLowerCase()}`}>
-      <div className="stage" role="application" aria-label="Interactive 3D digital twin of the Riverside District: buildings, roads and five underground utility networks">
+      <div className="stage" role="application" aria-label="Interactive 3D digital twin of Al Danah, Abu Dhabi: buildings, roads and five underground utility networks">
         <Canvas
           shadows
           dpr={dpr}
-          camera={{ fov: 34, near: 0.4, far: 2400, position: [-150, 230, 270] }}
+          camera={{ fov: 34, near: 0.4, far: 2400, position: POSES.intro.pos }}
           gl={{ antialias: false, powerPreference: 'high-performance', stencil: false }}
           onCreated={({ gl }) => {
             gl.toneMappingExposure = EXPOSURE;

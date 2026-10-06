@@ -1,5 +1,6 @@
 import { STREET_Z, HOSPITAL_POS, SCHOOL_POS, DEPOT_POS, BUILDINGS } from './city';
 import { LAYERS, INCIDENT_SEGMENT } from './networks';
+import { INCIDENT_STREET } from './geo';
 
 /**
  * Scenario constants for "Sector B-12 Water Network Anomaly".
@@ -11,7 +12,7 @@ const WATER_Z = STREET_Z[2] + LAYERS.water.offset; // -2.4
 export const LEAK = { x: 1.5, y: LAYERS.water.depth, z: WATER_Z } as const;
 export const LEAK_SURFACE = { x: LEAK.x, z: LEAK.z } as const;
 
-/** Excavation trench under Riverside Avenue, between the two intersections that bound B-12. */
+/** Excavation trench under Hamdan Bin Mohammed Street, between the two intersections that bound B-12. */
 export const TRENCH = { minX: -11.5, maxX: 11.5, minZ: -4.5, maxZ: 4.5, floor: -12.2 } as const;
 
 const IMPACT_RADIUS = 54;
@@ -35,7 +36,8 @@ export const INCIDENT = {
   scenarioName: 'Sector B-12 Water Network Anomaly',
   sector: 'B-12',
   asset: INCIDENT_SEGMENT.id,
-  road: 'Riverside Avenue',
+  road: INCIDENT_STREET.name,
+  roadShort: INCIDENT_STREET.short,
   confidence: 93,
   failureWindow: [36, 52] as [number, number],
   horizonHours: 72,
@@ -48,11 +50,12 @@ export const INCIDENT = {
   pressureBaselineBar: 3.926,
 } as const;
 
+/** UAE dirhams (AED, pegged at 3.6725 per US dollar). */
 export const COSTS = {
-  preventive: 180_000,
-  preventiveRange: [120_000, 250_000] as [number, number],
-  failure: 1_800_000,
-  avoided: 1_620_000,
+  preventive: 660_000,
+  preventiveRange: [440_000, 920_000] as [number, number],
+  failure: 6_600_000,
+  avoided: 5_940_000,
 } as const;
 
 export const IMPACT = {
@@ -62,9 +65,9 @@ export const IMPACT = {
 } as const;
 
 export const POI = {
-  hospital: { name: 'Central Medical Center', distanceM: 320, x: HOSPITAL_POS.x, z: HOSPITAL_POS.z, y: 11.5 },
-  school: { name: 'Riverside Academy', distanceM: 480, x: SCHOOL_POS.x, z: SCHOOL_POS.z, y: 2.6 },
-  depot: { name: 'Utility Operations Depot', x: DEPOT_POS.x, z: DEPOT_POS.z, y: 3.2 },
+  hospital: { name: 'General hospital', distanceM: 320, x: HOSPITAL_POS.x, z: HOSPITAL_POS.z, y: 11.5 },
+  school: { name: 'Public school', distanceM: 480, x: SCHOOL_POS.x, z: SCHOOL_POS.z, y: 2.6 },
+  depot: { name: 'Utility operations depot', x: DEPOT_POS.x, z: DEPOT_POS.z, y: 3.2 },
 } as const;
 
 export interface ValveDef {
@@ -93,7 +96,7 @@ export interface RepairStep {
 export const REPAIR_STEPS: RepairStep[] = [
   { id: 1, title: 'Isolate upstream valve', detail: 'Close V-B12-02 and V-B12-03' },
   { id: 2, title: 'Reroute water flow', detail: 'Supply B-12 via the A|B loop' },
-  { id: 3, title: 'Dispatch repair crew', detail: 'Crew 07 from Utility Operations Depot' },
+  { id: 3, title: 'Dispatch repair crew', detail: 'Crew 07 from the utility operations depot' },
   { id: 4, title: 'Replace damaged pipe section', detail: `${INCIDENT_SEGMENT.id} · 3.2 m ductile iron` },
   { id: 5, title: 'Pressure test and restore', detail: 'Reopen valves · verify 3.92 bar' },
 ];
@@ -115,8 +118,9 @@ export const EXPLAIN_FEATURES = [
   { label: 'Temperature variance', level: 'LOW', weight: 0.24 },
 ] as const;
 
+/** "AED 660K", "AED 5.94M". */
 export function formatMoney(v: number) {
-  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(v % 1_000_000 === 0 ? 1 : 2).replace(/\.?0+$/, '')}M`;
-  if (v >= 1000) return `$${Math.round(v / 1000)}K`;
-  return `$${v}`;
+  if (v >= 1_000_000) return `AED ${(v / 1_000_000).toFixed(v % 1_000_000 === 0 ? 1 : 2).replace(/\.?0+$/, '')}M`;
+  if (v >= 1000) return `AED ${Math.round(v / 1000)}K`;
+  return `AED ${v}`;
 }

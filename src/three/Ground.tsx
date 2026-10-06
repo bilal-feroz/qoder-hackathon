@@ -1,7 +1,7 @@
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import { BoxGeometry, InstancedBufferAttribute, InstancedMesh, Matrix4, Mesh, PlaneGeometry, Quaternion, Vector3 } from 'three';
-import { SECTORS, PLINTH, PLINTH_H, DIORAMA, RIVER } from '../data/city';
+import { SECTORS, PLINTH, PLINTH_H, DIORAMA, SEA } from '../data/city';
 import { TRENCH } from '../data/incident';
 import { live } from '../simulation/runtime';
 import { useTwinStore } from '../store/useTwinStore';
@@ -80,31 +80,24 @@ export function Diorama() {
   const faces = useMemo(() => {
     type F = { pos: [number, number, number]; rotY: number; w: number; h: number };
     const list: F[] = [];
-    const mainD = RIVER.minZ - DIORAMA.minZ; // 136
-    const mainCz = (RIVER.minZ + DIORAMA.minZ) / 2;
-    const chD = RIVER.maxZ - RIVER.minZ;
-    const chCz = (RIVER.minZ + RIVER.maxZ) / 2;
-    const bankD = DIORAMA.maxZ - RIVER.maxZ;
-    const bankCz = (RIVER.maxZ + DIORAMA.maxZ) / 2;
+    const mainD = SEA.minZ - DIORAMA.minZ; // 136
+    const mainCz = (SEA.minZ + DIORAMA.minZ) / 2;
+    const seaD = SEA.maxZ - SEA.minZ;
+    const seaCz = (SEA.minZ + SEA.maxZ) / 2;
     const fullH = -B;
+    const seabedH = SEA.bed - B;
     // north face (faces -z)
     list.push({ pos: [0, B / 2, DIORAMA.minZ], rotY: Math.PI, w: W, h: fullH });
-    // south face of the far bank (faces +z)
-    list.push({ pos: [0, B / 2, DIORAMA.maxZ], rotY: 0, w: W, h: fullH });
     // west/east faces of the main slab
     list.push({ pos: [DIORAMA.minX, B / 2, mainCz], rotY: -Math.PI / 2, w: mainD, h: fullH });
     list.push({ pos: [DIORAMA.maxX, B / 2, mainCz], rotY: Math.PI / 2, w: mainD, h: fullH });
-    // channel block (below the river bed)
-    const chH = RIVER.bed - B;
-    list.push({ pos: [DIORAMA.minX, B + chH / 2, chCz], rotY: -Math.PI / 2, w: chD, h: chH });
-    list.push({ pos: [DIORAMA.maxX, B + chH / 2, chCz], rotY: Math.PI / 2, w: chD, h: chH });
-    // far bank west/east
-    list.push({ pos: [DIORAMA.minX, B / 2, bankCz], rotY: -Math.PI / 2, w: bankD, h: fullH });
-    list.push({ pos: [DIORAMA.maxX, B / 2, bankCz], rotY: Math.PI / 2, w: bankD, h: fullH });
-    // quay walls
-    const qh = -RIVER.bed;
-    list.push({ pos: [0, RIVER.bed / 2, RIVER.minZ], rotY: 0, w: W, h: qh });
-    list.push({ pos: [0, RIVER.bed / 2, RIVER.maxZ], rotY: Math.PI, w: W, h: qh });
+    // ground below the sea bed: west/east and the open-water edge (faces +z)
+    list.push({ pos: [DIORAMA.minX, B + seabedH / 2, seaCz], rotY: -Math.PI / 2, w: seaD, h: seabedH });
+    list.push({ pos: [DIORAMA.maxX, B + seabedH / 2, seaCz], rotY: Math.PI / 2, w: seaD, h: seabedH });
+    list.push({ pos: [0, B + seabedH / 2, SEA.maxZ], rotY: 0, w: W, h: seabedH });
+    // Corniche quay wall
+    const qh = -SEA.bed;
+    list.push({ pos: [0, SEA.bed / 2, SEA.minZ], rotY: 0, w: W, h: qh });
     return list;
   }, [B, W]);
 
@@ -115,9 +108,9 @@ export function Diorama() {
           <planeGeometry args={[f.w, f.h, 1, 1]} />
         </mesh>
       ))}
-      {/* river bed */}
-      <mesh rotation-x={-Math.PI / 2} position={[0, RIVER.bed, (RIVER.minZ + RIVER.maxZ) / 2]} material={bed}>
-        <planeGeometry args={[W, RIVER.maxZ - RIVER.minZ]} />
+      {/* sea bed */}
+      <mesh rotation-x={-Math.PI / 2} position={[0, SEA.bed, (SEA.minZ + SEA.maxZ) / 2]} material={bed}>
+        <planeGeometry args={[W, SEA.maxZ - SEA.minZ]} />
       </mesh>
       {/* bottom of the slab */}
       <mesh rotation-x={Math.PI / 2} position={[0, B, (DIORAMA.minZ + DIORAMA.maxZ) / 2]} material={bed}>
@@ -130,8 +123,7 @@ export function Diorama() {
 export function Ground() {
   const asphalt = useMemo(() => createAsphaltMaterial(), []);
   const underside = useMemo(() => createUndersideMaterial(), []);
-  const bankGeo = useMemo(() => new PlaneGeometry(DIORAMA.maxX - DIORAMA.minX, DIORAMA.maxZ - RIVER.maxZ, 1, 1), []);
-  const groundGeo = useMemo(() => new PlaneGeometry(DIORAMA.maxX - DIORAMA.minX, RIVER.minZ - DIORAMA.minZ, 1, 1), []);
+  const groundGeo = useMemo(() => new PlaneGeometry(DIORAMA.maxX - DIORAMA.minX, SEA.minZ - DIORAMA.minZ, 1, 1), []);
   const select = useTwinStore((s) => s.select);
   const undersideRef = useRef<Mesh>(null);
 
@@ -144,7 +136,7 @@ export function Ground() {
       <mesh
         geometry={groundGeo}
         rotation-x={-Math.PI / 2}
-        position={[0, 0, (DIORAMA.minZ + RIVER.minZ) / 2]}
+        position={[0, 0, (DIORAMA.minZ + SEA.minZ) / 2]}
         material={asphalt}
         receiveShadow
         onPointerMove={blockIfSolid}
@@ -154,9 +146,8 @@ export function Ground() {
         }}
         onDoubleClick={() => select(null)}
       />
-      <mesh geometry={bankGeo} rotation-x={-Math.PI / 2} position={[0, 0, (RIVER.maxZ + DIORAMA.maxZ) / 2]} material={asphalt} receiveShadow />
-      <mesh ref={undersideRef} rotation-x={Math.PI / 2} position={[0, -0.04, (DIORAMA.minZ + RIVER.minZ) / 2]} material={underside}>
-        <planeGeometry args={[DIORAMA.maxX - DIORAMA.minX, RIVER.minZ - DIORAMA.minZ]} />
+      <mesh ref={undersideRef} rotation-x={Math.PI / 2} position={[0, -0.04, (DIORAMA.minZ + SEA.minZ) / 2]} material={underside}>
+        <planeGeometry args={[DIORAMA.maxX - DIORAMA.minX, SEA.minZ - DIORAMA.minZ]} />
       </mesh>
       <Plinths />
     </group>

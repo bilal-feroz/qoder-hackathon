@@ -8,9 +8,10 @@ import { Ground, Diorama } from './Ground';
 import { CityBuildings } from './CityBuildings';
 import { Rooftops } from './Rooftops';
 import { SpecialProps } from './SpecialProps';
+import { Mosque } from './Mosque';
 import { StreetFurniture } from './StreetFurniture';
 import { Vegetation } from './Vegetation';
-import { River } from './River';
+import { Sea } from './Sea';
 import { StreetLife } from './StreetLife';
 import { Traffic } from './Traffic';
 import { Cutaway, TrenchVolume } from './Cutaway';
@@ -19,6 +20,7 @@ import { Correlation } from './Correlation';
 import { ImpactZone } from './ImpactZone';
 import { RepairRoute } from './RepairRoute';
 import { SectorOverlay } from './SectorOverlay';
+import { StreetNames } from './StreetNames';
 import { UndergroundNetwork, SurfaceLabel } from './UndergroundNetwork';
 import { InspectorCard } from './InspectorCard';
 import { Effects } from './Effects';
@@ -102,10 +104,11 @@ export function CityScene({ quality }: { quality: 'high' | 'low' }) {
       <CameraRig />
       <SurfaceGroup>
         <Ground />
-        <River />
+        <Sea />
         <CityBuildings />
         <Rooftops />
         <SpecialProps />
+        <Mosque />
         <StreetFurniture />
         <Vegetation />
         <StreetLife />
@@ -116,6 +119,7 @@ export function CityScene({ quality }: { quality: 'high' | 'low' }) {
         <ImpactZone />
         <RepairRoute />
         <SectorOverlay />
+        <StreetNames />
         <SurfaceLabel />
       </SurfaceGroup>
       <Diorama />

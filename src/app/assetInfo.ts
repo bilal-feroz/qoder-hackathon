@@ -44,8 +44,10 @@ export function describe(info: HoverInfo, snap: SimSnapshot): AssetInfo | null {
         tone: inZone ? 'warn' : 'ok',
         status: inZone ? 'In affected zone' : 'Nominal',
         rows: [
-          { label: 'Height', value: `${Math.round(b.height * 10)} m · ${b.floors} floors` },
-          { label: b.kind === 'office' ? 'Workers (day)' : 'Est. occupants', value: b.occupants > 0 ? b.occupants.toLocaleString('en-US') : '—' },
+          b.kind === 'mosque'
+            ? { label: 'Minaret', value: `${Math.round(b.height * 10)} m` }
+            : { label: 'Height', value: `${Math.round(b.height * 10)} m · ${b.floors} floors` },
+          ...(b.kind === 'mosque' ? [] : [{ label: b.kind === 'office' ? 'Workers (day)' : 'Est. occupants', value: b.occupants > 0 ? b.occupants.toLocaleString('en-US') : '—' }]),
           { label: 'Water service', value: inZone ? 'At risk if main fails' : 'Normal', tone: inZone ? 'warn' : 'ok' },
         ],
       };
@@ -59,7 +61,7 @@ export function describe(info: HoverInfo, snap: SimSnapshot): AssetInfo | null {
       return {
         kicker: 'SECTOR',
         title: s.id,
-        subtitle: s.kind === 'park' ? 'Riverside Park' : s.kind === 'yard' ? 'Utility yard' : s.kind === 'campus' ? 'Education campus' : 'Urban block',
+        subtitle: s.kind === 'park' ? 'Public park' : s.kind === 'yard' ? 'Utility yard' : s.kind === 'campus' ? 'Education campus' : 'Urban block',
         tone: incident ? (snap.localized ? 'alert' : 'warn') : 'ok',
         status: incident ? (snap.localized ? 'Incident' : 'Anomaly') : 'Nominal',
         rows: [
@@ -81,7 +83,7 @@ export function describe(info: HoverInfo, snap: SimSnapshot): AssetInfo | null {
         return {
           kicker: 'ASSET',
           title: seg.id,
-          subtitle: `${layer.label} main · Riverside Avenue`,
+          subtitle: `${layer.label} main · ${INCIDENT.roadShort}`,
           tone: repaired ? 'ok' : active ? 'alert' : 'ok',
           status: repaired ? 'Repaired' : isolated ? 'Isolated' : active ? (snap.localized ? 'Leak detected' : 'Abnormal') : 'Normal',
           color: layer.color,
@@ -134,7 +136,7 @@ export function describe(info: HoverInfo, snap: SimSnapshot): AssetInfo | null {
         rows.push({ label: 'Soil moisture', value: `${(21 + dev * 0.21).toFixed(1)}% VWC`, mono: true });
         rows.push({ label: 'Deviation', value: `${fmt(dev, 0)}%`, mono: true, tone: dev > 3 ? tone : undefined });
       } else if (s.type === 'temperature') {
-        rows.push({ label: 'Ground temp.', value: `${(14 * (1 + snap.tempDev / 100)).toFixed(2)} °C`, mono: true });
+        rows.push({ label: 'Ground temp.', value: `${(31 * (1 + snap.tempDev / 100)).toFixed(2)} °C`, mono: true });
         rows.push({ label: 'Deviation', value: `${fmt(snap.tempDev)}%`, mono: true, tone: snap.tempDev > 1 ? tone : undefined });
       } else if (s.type === 'flow') {
         rows.push({ label: 'Flow', value: `${(412 * (1 + snap.flowImbalance / 100)).toFixed(0)} L/s`, mono: true });
