@@ -295,7 +295,7 @@ function LeakAnnotation() {
         <div className="leak-card">
           <div className="leak-title">
             <AlertTriangle size={14} strokeWidth={2.4} />
-            {future ? 'PIPE BURST LIKELY' : 'POSSIBLE WATER LEAK'}
+            {future ? 'PIPE BURST' : 'POSSIBLE WATER LEAK'}
           </div>
           <div className="leak-rows">
             <div>
@@ -303,7 +303,7 @@ function LeakAnnotation() {
               <b className="tnum">{future ? '97%' : `${INCIDENT.confidence}%`}</b>
             </div>
             <div>
-              <span>{future ? 'Projected' : 'Predicted failure'}</span>
+              <span>{future ? 'Burst at' : 'Predicted failure'}</span>
               <b className="tnum">{future ? 'T+44 h' : `${INCIDENT.failureWindow[0]}–${INCIDENT.failureWindow[1]} h`}</b>
             </div>
           </div>

@@ -160,7 +160,8 @@ export function computeTargets(t: number, v: ViewInputs): VisualTargets {
   const a = v.active;
   const s = a ? t : -1;
   const future = v.future ? 1 : 0;
-  const burst = v.compare === 'none' ? 1 : 0;
+  // +48H looks past the projected T+44 h failure, so it shows the burst too
+  const burst = v.compare === 'none' || v.future ? 1 : 0;
   const repairedCompare = v.compare === 'ai' ? 1 : 0;
 
   let leak = a ? keys(s, [[T.anomaly, 0], [T.dive, 0.35], [T.leak, 1], [T.repair + 1.2, 1], [T.repair + 2.2, 0.32], [T.replace, 0.32], [T.replace + 1.4, 0]]) : 0;
