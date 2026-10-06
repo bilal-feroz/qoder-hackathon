@@ -1718,3 +1718,93 @@ b.lvl {
     display: none;
   }
 }
+
+@media (max-width: 1500px) {
+  .wf-title {
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 12.5px;
+  }
+
+  .sig-card .chip svg {
+    display: none;
+  }
+
+  .wf-list {
+    gap: 4px;
+  }
+}
+
+@media (max-width: 1280px) {
+  .strip-inner {
+    grid-template-columns: 1.15fr 1fr 0.85fr;
+  }
+
+  .wf-title {
+    font-size: 11.5px;
+  }
+
+  .wf-conn {
+    display: none;
+  }
+
+  .wf-top {
+    margin-bottom: 6px;
+  }
+}
+
+@media (max-width: 1500px) {
+  .why-head {
+    white-space: nowrap;
+    letter-spacing: 0.1em;
+    font-size: 10px;
+  }
+
+  .why-row {
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .why-row span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .why-body {
+    gap: 8px;
+  }
+
+  .why-gauge {
+    width: 58px;
+  }
+
+  .why-gauge svg {
+    width: 54px;
+    height: 54px;
+  }
+
+  .why-gauge-val {
+    top: 17px;
+    font-size: 14px;
+  }
+
+  .why-gauge-label {
+    font-size: 8px;
+  }
+}
+
+.rec-badge {
+  white-space: nowrap;
+}
+
+@media (max-width: 1500px) {
+  .rec-badge.big {
+    font-size: 14.5px;
+    letter-spacing: 0.08em;
+    padding: 0 12px;
+  }
+
+  .resolved-hero b {
+    font-size: 19px;
+  }
+}

@@ -4,7 +4,8 @@ import { Line } from '@react-three/drei';
 import { AdditiveBlending, Color, Mesh, ShaderMaterial, Vector3, type Intersection, type Raycaster } from 'three';
 import { Hospital, School, Users, Construction } from 'lucide-react';
 import { IMPACT, INCIDENT, LEAK_SURFACE, POI } from '../data/incident';
-import { live } from '../simulation/runtime';
+import { live, runtime } from '../simulation/runtime';
+import { T } from '../simulation/timeline';
 import { G } from './shaders/globals';
 import { GLSL_COMMON } from './shaders/glsl';
 import { FadeHtml } from './labels/FadeHtml';
@@ -309,10 +310,60 @@ function SurfaceDamage() {
   );
 }
 
+/** Emerald ripples from the repaired site when the failure is prevented. */
+function HealPulse() {
+  const mat = useMemo(
+    () =>
+      new ShaderMaterial({
+        transparent: true,
+        depthWrite: false,
+        blending: AdditiveBlending,
+        uniforms: { uElapsed: { value: -1 }, uColor: { value: new Color('#34d399').multiplyScalar(1.6) } },
+        vertexShader: /* glsl */ `
+          varying vec2 vP;
+          void main() { vP = position.xy; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+        `,
+        fragmentShader: /* glsl */ `
+          uniform float uElapsed;
+          uniform vec3 uColor;
+          varying vec2 vP;
+          void main() {
+            if (uElapsed < 0.0) discard;
+            float d = length(vP);
+            float a = 0.0;
+            for (int k = 0; k < 3; k++) {
+              float e = uElapsed - float(k) * 0.55;
+              if (e < 0.0) continue;
+              float r = 3.0 + e * 26.0;
+              float fade = 1.0 - smoothstep(0.0, 2.6, e);
+              a += (1.0 - smoothstep(0.0, 0.5 + e * 0.35, abs(d - r))) * fade;
+            }
+            gl_FragColor = vec4(uColor * a * 0.8, 1.0);
+          }
+        `,
+      }),
+    [],
+  );
+  const ref = useRef<Mesh>(null);
+  useFrame(() => {
+    const active = useTwinStore.getState().status !== 'idle';
+    const e = active ? runtime.t - T.resolved : -1;
+    const on = e >= 0 && e < 4.5;
+    mat.uniforms.uElapsed.value = on ? e : -1;
+    if (ref.current) ref.current.visible = on;
+  });
+  return (
+    <mesh ref={ref} rotation-x={-Math.PI / 2} position={[IMPACT.center.x, 0.3, IMPACT.center.z]} material={mat} raycast={noRaycast} renderOrder={8}>
+      <planeGeometry args={[150, 150]} />
+    </mesh>
+  );
+}
+
 export function ImpactZone() {
   return (
     <group>
       <ZoneDisc />
+      <HealPulse />
       <RoadAlert />
       <SurfaceDamage />
       <PoiBadges />

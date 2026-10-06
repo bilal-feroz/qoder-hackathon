@@ -199,11 +199,11 @@
 
   .drawer-toggles {
     display: flex;
+    flex-direction: column;
     gap: 8px;
     position: absolute;
-    top: calc(var(--header-h) + 2px);
-    left: 50%;
-    transform: translateX(-50%);
+    left: var(--gap);
+    bottom: calc(var(--strip-h) + var(--gap) * 2);
     z-index: 46;
   }
 }

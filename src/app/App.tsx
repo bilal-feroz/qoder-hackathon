@@ -49,7 +49,7 @@ export function App() {
   const boot = useTwinStore((s) => s.boot);
   const select = useTwinStore((s) => s.select);
   const phase = useTwinStore((s) => s.snap.phase);
-  const [dpr, setDpr] = useState(1.6);
+  const [dpr, setDpr] = useState(() => Math.min(typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1, 1.5));
   const [quality, setQuality] = useState<'high' | 'low'>('high');
   const viewportRef = useRef<HTMLDivElement>(null);
   const compact = useMediaQuery('(max-width: 1100px)');
@@ -75,14 +75,15 @@ export function App() {
           }}
           onPointerMissed={() => select(null)}
         >
+          {/* only steps down on genuinely slow frames (displays capped at 30 Hz stay at full quality) */}
           <PerformanceMonitor
-            bounds={() => [42, 58]}
-            flipflops={3}
+            bounds={() => [24, 50]}
+            flipflops={2}
             onDecline={() => {
               setDpr(1);
               setQuality('low');
             }}
-            onIncline={() => setDpr(1.6)}
+            onIncline={() => setDpr(Math.min(window.devicePixelRatio || 1, 1.75))}
           />
           <CityScene quality={quality} />
         </Canvas>

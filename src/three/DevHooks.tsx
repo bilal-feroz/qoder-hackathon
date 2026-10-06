@@ -16,6 +16,7 @@ export function DevHooks() {
     w.__dev = {
       store: useTwinStore,
       runtime,
+      r3f: get,
       step: (seconds: number, fps = 30) => {
         const state = get();
         if (state.frameloop !== 'never') state.setFrameloop('never');
