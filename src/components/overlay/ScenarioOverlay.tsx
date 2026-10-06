@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { CheckCircle2, Loader, OctagonAlert, Pause, Play, Radar, RotateCcw, SkipForward, TriangleAlert, Wrench, X, Zap } from 'lucide-react';
+import { Check, CheckCircle2, Loader, OctagonAlert, Pause, Play, Radar, RotateCcw, SkipForward, TriangleAlert, Wrench, X, Zap } from 'lucide-react';
 import { useTwinStore } from '../../store/useTwinStore';
 import { useDismiss } from '../../hooks/useDismiss';
-import { T, TIMELINE_MARKERS } from '../../simulation/timeline';
+import { T } from '../../simulation/timeline';
 import { runtime } from '../../simulation/runtime';
 import { INCIDENT } from '../../data/incident';
 
@@ -32,12 +32,14 @@ export function ScenarioCaption() {
   );
 }
 
-function fmtTime(t: number) {
-  const s = Math.max(0, Math.floor(t));
-  return `00:${String(s).padStart(2, '0')}`;
-}
+const STAGES = [
+  { label: 'Detect', from: T.anomaly, to: T.leak },
+  { label: 'Predict', from: T.leak, to: T.impact },
+  { label: 'Prioritize', from: T.impact, to: T.plan },
+  { label: 'Plan', from: T.plan, to: T.resolved },
+];
 
-/** Bottom-centre: the single strong "run" button, then subtle transport controls. */
+/** Bottom-centre: one strong "run" button, then a playback bar that doubles as the AI pipeline. */
 export function ScenarioTransport() {
   const status = useTwinStore((s) => s.status);
   const run = useTwinStore((s) => s.run);
@@ -46,9 +48,9 @@ export function ScenarioTransport() {
   const skip = useTwinStore((s) => s.skipToIncident);
   const seek = useTwinStore((s) => s.seek);
   const t = useTwinStore((s) => s.snap.t);
+  const exploded = useTwinStore((s) => s.exploded);
   const trackRef = useRef<HTMLDivElement>(null);
   const fillRef = useRef<HTMLDivElement>(null);
-  const exploded = useTwinStore((s) => s.exploded);
 
   // smooth progress independent of the 12 Hz snapshot
   useEffect(() => {
@@ -69,10 +71,7 @@ export function ScenarioTransport() {
           <span className="run-icon">
             <Zap size={18} />
           </span>
-          <span className="run-text">
-            <span className="run-title">Run failure scenario</span>
-            <span className="run-sub">Sector B-12 · 50 s</span>
-          </span>
+          <span className="run-title">Run failure scenario</span>
         </button>
         <button className="link-btn skip-link" onClick={skip}>
           Skip to incident
@@ -100,16 +99,21 @@ export function ScenarioTransport() {
         <SkipForward size={15} />
       </button>
       <div className="track" ref={trackRef} onClick={onSeek} role="slider" aria-label="Scenario timeline" aria-valuemin={0} aria-valuemax={T.end} aria-valuenow={Math.round(t)} tabIndex={0}>
-        <div className="track-fill" ref={fillRef} />
-        {TIMELINE_MARKERS.map((m) => (
-          <span key={m.label} className={`track-mark ${t >= m.t ? 'is-past' : ''}`} style={{ left: `${(m.t / T.end) * 100}%` }} title={m.label}>
-            <i />
-            <em>{m.label}</em>
-          </span>
-        ))}
+        <div className="track-line">
+          <div className="track-fill" ref={fillRef} />
+        </div>
+        <div className="track-stages">
+          {STAGES.map((st) => {
+            const state = t >= st.to ? 'done' : t >= st.from ? 'active' : 'pending';
+            return (
+              <span key={st.label} className={`track-stage is-${state}`}>
+                {state === 'done' && <Check size={11} strokeWidth={3} />}
+                {st.label}
+              </span>
+            );
+          })}
+        </div>
       </div>
-      <span className="track-time mono tnum">{fmtTime(t)}</span>
-      <span className={`track-state ${status}`}>{status === 'running' ? 'Live' : status === 'paused' ? 'Paused' : 'Complete'}</span>
     </div>
   );
 }
@@ -172,10 +176,7 @@ export function FutureOverlay() {
     <div className={`future-frame ${future ? 'is-on' : ''}`}>
       <div className="future-banner" role="status">
         <TriangleAlert size={16} />
-        <div>
-          <div className="future-title">Predicted state · if no action is taken</div>
-          <div className="future-sub">Simulation · T+48 h</div>
-        </div>
+        <div className="future-title">T+48 h · if no action is taken</div>
         <button className="btn-ghost sm" onClick={() => setFuture(false)}>
           Back to now
         </button>

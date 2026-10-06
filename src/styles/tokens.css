@@ -48,33 +48,29 @@
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 
   /* layout */
-  --header-h: 58px;
-  --rail-l: 296px;
-  --rail-r: 340px;
-  --strip-h: 188px;
+  --header-h: 56px;
+  --rail-l: 236px;
+  --rail-r: 280px;
   --gap: 12px;
 }
 
 @media (max-width: 1600px) {
   :root {
-    --rail-l: 272px;
-    --rail-r: 308px;
-    --strip-h: 172px;
+    --rail-l: 224px;
+    --rail-r: 268px;
     --gap: 10px;
   }
 }
 
 @media (max-width: 1360px) {
   :root {
-    --rail-l: 256px;
-    --rail-r: 292px;
-    --strip-h: 164px;
+    --rail-l: 212px;
+    --rail-r: 256px;
   }
 }
 
-@media (max-height: 960px) {
+@media (max-height: 900px) {
   :root {
-    --header-h: 54px;
-    --strip-h: 160px;
+    --header-h: 52px;
   }
 }

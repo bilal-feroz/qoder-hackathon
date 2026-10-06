@@ -27,10 +27,11 @@
   z-index: 40;
 }
 
+/* rails float as content-height cards so the city stays visible beneath them */
 .rail {
   position: absolute;
   top: var(--header-h);
-  bottom: var(--gap);
+  max-height: calc(100% - var(--header-h) - var(--gap));
   z-index: 30;
   display: flex;
   flex-direction: column;
@@ -47,21 +48,13 @@
   width: var(--rail-r);
 }
 
-.strip {
-  position: absolute;
-  left: calc(var(--rail-l) + var(--gap) * 2);
-  right: calc(var(--rail-r) + var(--gap) * 2);
-  bottom: var(--gap);
-  height: var(--strip-h);
-  z-index: 30;
-}
 
 .viewport {
   position: absolute;
   top: calc(var(--header-h) + 2px);
   left: calc(var(--rail-l) + var(--gap) * 2);
   right: calc(var(--rail-r) + var(--gap) * 2);
-  bottom: calc(var(--strip-h) + var(--gap) * 2);
+  bottom: var(--gap);
   z-index: 25;
   pointer-events: none;
 }
@@ -135,11 +128,6 @@
   transform: translateX(28px);
 }
 
-.boot-loading .strip,
-.boot-intro .strip {
-  transform: translateY(24px);
-}
-
 .boot-loading .hdr,
 .boot-intro .hdr {
   transform: translateY(-10px);
@@ -162,14 +150,13 @@
 
 @media (max-width: 1100px) {
   :root {
-    --rail-l: 300px;
-    --rail-r: 320px;
-    --strip-h: 158px;
+    --rail-l: 280px;
+    --rail-r: 300px;
   }
 
   .app.is-compact .rail {
     top: calc(var(--header-h) + 44px);
-    bottom: calc(var(--strip-h) + var(--gap) * 2);
+    bottom: calc(var(--gap) + 64px);
     transition: transform 0.45s var(--ease-out), opacity 0.35s ease;
     z-index: 45;
   }
@@ -187,11 +174,6 @@
     transform: none;
   }
 
-  .app.is-compact .strip {
-    left: var(--gap);
-    right: var(--gap);
-  }
-
   .app.is-compact .viewport {
     left: var(--gap);
     right: var(--gap);
@@ -203,7 +185,7 @@
     gap: 8px;
     position: absolute;
     left: var(--gap);
-    bottom: calc(var(--strip-h) + var(--gap) * 2);
+    bottom: calc(var(--gap) + 72px);
     z-index: 46;
   }
 }
@@ -211,12 +193,7 @@
 @media (max-width: 760px) {
   :root {
     --header-h: 52px;
-    --strip-h: 0px;
     --gap: 8px;
-  }
-
-  .strip {
-    display: none;
   }
 
   .vp-tl,

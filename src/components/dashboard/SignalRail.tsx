@@ -1,4 +1,4 @@
-import { Activity, Droplets, Gauge, Thermometer, BrainCircuit } from 'lucide-react';
+import { Activity, Droplets, Gauge, Thermometer } from 'lucide-react';
 import { useTwinStore } from '../../store/useTwinStore';
 import { Sparkline } from '../ui/Sparkline';
 import { StatusChip, type ChipTone } from '../ui/StatusChip';
@@ -12,7 +12,6 @@ interface CardProps {
   icon: React.ReactNode;
   label: string;
   value: string;
-  unit?: string;
   tone: ChipTone;
   chip: string;
   history: number[];
@@ -20,69 +19,66 @@ interface CardProps {
   projected: boolean;
 }
 
-function SignalCard({ icon, label, value, unit, tone, chip, history, domain, projected }: CardProps) {
+function SignalCard({ icon, label, value, tone, chip, history, domain, projected }: CardProps) {
   const color = tone === 'warn' ? 'var(--amber)' : tone === 'alert' ? 'var(--red)' : 'var(--cyan)';
   return (
-    <article className={`sig-card tone-${tone} ${projected ? 'is-projected' : ''}`}>
+    <article className={`sig-card tone-${tone}`}>
       <header className="sig-head">
         <span className="sig-icon" aria-hidden>
           {icon}
         </span>
         <span className="sig-label">{label}</span>
-        {projected ? <StatusChip tone="alert">T+48H</StatusChip> : <StatusChip tone={tone}>{chip}</StatusChip>}
+        {projected ? <StatusChip tone="alert" icon={false}>+48H</StatusChip> : <StatusChip tone={tone} icon={false}>{chip}</StatusChip>}
       </header>
-      <div className="sig-value tnum">
-        {value}
-        {unit && <span className="sig-unit">{unit}</span>}
+      <div className="sig-row">
+        <span className="sig-value tnum">{value}</span>
+        <span className="sig-spark">
+          <Sparkline values={history} color={color} domain={domain} height={26} width={96} />
+        </span>
       </div>
-      <Sparkline values={history} color={color} domain={domain} />
     </article>
   );
 }
 
+const SHORT: Record<string, string> = {
+  'Pressure deviation': 'Pressure',
+  'Moisture correlation': 'Moisture',
+  'Flow imbalance': 'Flow',
+  'Temperature variance': 'Temperature',
+};
+
+/** Feature contributions + combined confidence — only while an alert is live. */
 function WhyAlert() {
   const confidence = useTwinStore((s) => s.snap.confidence);
   const anomaly = useTwinStore((s) => s.snap.anomaly);
-  const localized = useTwinStore((s) => s.snap.localized);
-  const correlating = useTwinStore((s) => s.snap.correlating);
   const resolved = useTwinStore((s) => s.snap.resolved);
   const progress = Math.min(1, confidence / INCIDENT.confidence);
   const shown = useAnimatedNumber(confidence, 6);
-  const C = 2 * Math.PI * 22;
+  const C = 2 * Math.PI * 20;
 
-  if (!anomaly || confidence < 0.5) return null;
+  if (!anomaly || resolved || confidence < 0.5) return null;
 
   return (
-    <section className={`why ${localized ? 'is-final' : ''}`} aria-label="Why this alert">
-      <header className="why-head">
-        <BrainCircuit size={14} />
-        <span>Why this alert?</span>
-        {correlating && <span className="why-live">correlating</span>}
-      </header>
+    <section className="why" aria-label="Why this alert">
       <div className="why-body">
         <ul className="why-list">
           {EXPLAIN_FEATURES.map((f) => (
             <li key={f.label}>
-              <div className="why-row">
-                <span>{f.label}</span>
-                <b className={`lvl lvl-${f.level.toLowerCase()}`}>{f.level}</b>
-              </div>
-              <div className="why-bar">
+              <span className="why-name">{SHORT[f.label] ?? f.label}</span>
+              <span className="why-bar" aria-label={`${f.level}`}>
                 <i style={{ width: `${f.weight * progress * 100}%` }} className={`lvl-${f.level.toLowerCase()}`} />
-              </div>
+              </span>
             </li>
           ))}
         </ul>
-        <div className="why-gauge">
-          <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden>
-            <circle cx="32" cy="32" r="22" className="why-gauge-track" />
-            <circle cx="32" cy="32" r="22" className="why-gauge-fill" strokeDasharray={`${(C * shown) / 100} ${C}`} transform="rotate(-90 32 32)" />
+        <div className="why-gauge" aria-label={`Combined confidence ${Math.round(shown)} percent`}>
+          <svg width="56" height="56" viewBox="0 0 56 56" aria-hidden>
+            <circle cx="28" cy="28" r="20" className="why-gauge-track" />
+            <circle cx="28" cy="28" r="20" className="why-gauge-fill" strokeDasharray={`${(C * shown) / 100} ${C}`} transform="rotate(-90 28 28)" />
           </svg>
           <div className="why-gauge-val tnum">{Math.round(shown)}%</div>
-          <div className="why-gauge-label">combined confidence</div>
         </div>
       </div>
-      <p className="why-note">{resolved ? 'Pattern cleared.' : 'No single signal crossed its threshold.'}</p>
     </section>
   );
 }
@@ -108,41 +104,41 @@ export function SignalRail() {
       </header>
       <div className="sig-grid">
         <SignalCard
-          icon={<Gauge size={15} />}
-          label="Water Pressure"
+          icon={<Gauge size={14} />}
+          label="Pressure"
           value={active ? `${sign(tel.pressureDev)}%` : '100%'}
           tone={pTone}
-          chip={pTone === 'ok' ? (resolved ? 'Recovered' : 'Normal') : 'Drift'}
+          chip={pTone === 'ok' ? 'OK' : 'Drift'}
           history={history.pressure}
           domain={[-3, 0.5]}
           projected={future}
         />
         <SignalCard
-          icon={<Droplets size={15} />}
-          label="Ground Moisture"
-          value={active && tel.moistureDev > 0.6 ? `+${tel.moistureDev.toFixed(0)}%` : 'Normal'}
+          icon={<Droplets size={14} />}
+          label="Moisture"
+          value={active && tel.moistureDev > 0.6 ? `+${tel.moistureDev.toFixed(0)}%` : 'OK'}
           tone={mTone}
-          chip={mTone === 'ok' ? 'Normal' : mTone === 'info' ? 'Drying' : 'Elevated'}
+          chip={mTone === 'ok' ? 'OK' : mTone === 'info' ? 'Drying' : 'High'}
           history={history.moisture}
           domain={[0, 20]}
           projected={future}
         />
         <SignalCard
-          icon={<Thermometer size={15} />}
+          icon={<Thermometer size={14} />}
           label="Temperature"
-          value={active && tel.tempDev > 0.3 ? `+${tel.tempDev.toFixed(0)}%` : 'Normal'}
+          value={active && tel.tempDev > 0.3 ? `+${tel.tempDev.toFixed(0)}%` : 'OK'}
           tone={tTone}
-          chip={tTone === 'ok' ? 'Normal' : tTone === 'info' ? 'Settling' : 'Variance'}
+          chip={tTone === 'warn' ? 'High' : 'OK'}
           history={history.temp}
           domain={[0, 4.5]}
           projected={future}
         />
         <SignalCard
-          icon={<Activity size={15} />}
-          label="Network Health"
+          icon={<Activity size={14} />}
+          label="Network"
           value={`${tel.networkHealth.toFixed(1)}%`}
           tone={nTone}
-          chip={nTone === 'ok' ? 'Healthy' : 'Degraded'}
+          chip={nTone === 'ok' ? 'OK' : 'Low'}
           history={history.health}
           domain={[96.5, 99]}
           projected={future}

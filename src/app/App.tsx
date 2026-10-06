@@ -9,11 +9,11 @@ import { useTwinStore } from '../store/useTwinStore';
 import { Header } from '../components/dashboard/Header';
 import { SignalRail } from '../components/dashboard/SignalRail';
 import { RecommendationPanel } from '../components/dashboard/RecommendationPanel';
-import { IntelStrip } from '../components/dashboard/IntelStrip';
 import { LayerPanel } from '../components/overlay/LayerPanel';
 import { CameraPresets, ViewToggles } from '../components/overlay/ViewControls';
 import { FutureOverlay, ScenarioCaption, ScenarioMenu, ScenarioTransport } from '../components/overlay/ScenarioOverlay';
 import { CompareOverlay } from '../components/overlay/CompareOverlay';
+import { ForecastCard } from '../components/overlay/ForecastCard';
 import { HoverTooltip } from '../components/overlay/HoverTooltip';
 import { BootSequence } from '../components/overlay/BootSequence';
 import { useShortcuts } from '../hooks/useShortcuts';
@@ -97,9 +97,6 @@ export function App() {
       <aside className="rail rail-r panel panel-enter" style={{ ['--enter-delay' as string]: '160ms' }} aria-label="AI recommendation">
         <RecommendationPanel />
       </aside>
-      <section className="strip panel panel-enter" style={{ ['--enter-delay' as string]: '240ms' }} aria-label="Supporting intelligence">
-        <IntelStrip />
-      </section>
 
       <div className="viewport" ref={viewportRef}>
         <div className="vp-tl panel-enter" style={{ ['--enter-delay' as string]: '300ms' }}>
@@ -112,6 +109,9 @@ export function App() {
         <div className="vp-tr panel-enter" style={{ ['--enter-delay' as string]: '340ms' }}>
           <ViewToggles />
           <CameraPresets />
+        </div>
+        <div className="vp-bl">
+          <ForecastCard />
         </div>
         <div className="vp-bc panel-enter" style={{ ['--enter-delay' as string]: '420ms' }}>
           <ScenarioTransport />
