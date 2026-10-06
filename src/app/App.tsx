@@ -1,0 +1,137 @@
+import { useEffect, useRef, useState } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { PerformanceMonitor } from '@react-three/drei';
+import { Activity, ShieldCheck } from 'lucide-react';
+import { CityScene } from '../three/CityScene';
+import { viewInsets } from '../three/CameraRig';
+import { EXPOSURE } from '../three/sceneConfig';
+import { useTwinStore } from '../store/useTwinStore';
+import { Header } from '../components/dashboard/Header';
+import { SignalRail } from '../components/dashboard/SignalRail';
+import { RecommendationPanel } from '../components/dashboard/RecommendationPanel';
+import { IntelStrip } from '../components/dashboard/IntelStrip';
+import { LayerPanel } from '../components/overlay/LayerPanel';
+import { CameraPresets, ViewToggles } from '../components/overlay/ViewControls';
+import { FutureOverlay, ScenarioCaption, ScenarioMenu, ScenarioTransport } from '../components/overlay/ScenarioOverlay';
+import { CompareOverlay } from '../components/overlay/CompareOverlay';
+import { HoverTooltip } from '../components/overlay/HoverTooltip';
+import { BootSequence } from '../components/overlay/BootSequence';
+import { useShortcuts } from '../hooks/useShortcuts';
+import { useMediaQuery } from '../hooks/useMediaQuery';
+import '../styles/layout.css';
+import '../styles/panels.css';
+import '../styles/overlays.css';
+import '../styles/world.css';
+
+function useViewportInsets(ref: React.RefObject<HTMLDivElement | null>) {
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () => {
+      const r = el.getBoundingClientRect();
+      viewInsets.left = r.left;
+      viewInsets.right = window.innerWidth - r.right;
+      viewInsets.top = r.top;
+      viewInsets.bottom = window.innerHeight - r.bottom;
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    window.addEventListener('resize', update);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', update);
+    };
+  }, [ref]);
+}
+
+export function App() {
+  const boot = useTwinStore((s) => s.boot);
+  const select = useTwinStore((s) => s.select);
+  const phase = useTwinStore((s) => s.snap.phase);
+  const [dpr, setDpr] = useState(1.6);
+  const [quality, setQuality] = useState<'high' | 'low'>('high');
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const compact = useMediaQuery('(max-width: 1100px)');
+  const [drawer, setDrawer] = useState<null | 'left' | 'right'>(null);
+
+  useViewportInsets(viewportRef);
+  useShortcuts();
+
+  useEffect(() => {
+    if (!compact) setDrawer(null);
+  }, [compact]);
+
+  return (
+    <div className={`app boot-${boot} ${compact ? 'is-compact' : ''} ${drawer ? `drawer-${drawer}` : ''} phase-${phase.toLowerCase()}`}>
+      <div className="stage">
+        <Canvas
+          shadows
+          dpr={dpr}
+          camera={{ fov: 34, near: 0.4, far: 2400, position: [-150, 230, 270] }}
+          gl={{ antialias: false, powerPreference: 'high-performance', stencil: false }}
+          onCreated={({ gl }) => {
+            gl.toneMappingExposure = EXPOSURE;
+          }}
+          onPointerMissed={() => select(null)}
+        >
+          <PerformanceMonitor
+            bounds={() => [42, 58]}
+            flipflops={3}
+            onDecline={() => {
+              setDpr(1);
+              setQuality('low');
+            }}
+            onIncline={() => setDpr(1.6)}
+          />
+          <CityScene quality={quality} />
+        </Canvas>
+      </div>
+
+      <Header />
+
+      <aside className="rail rail-l panel panel-enter" style={{ ['--enter-delay' as string]: '80ms' }} aria-label="Live signals">
+        <SignalRail />
+      </aside>
+      <aside className="rail rail-r panel panel-enter" style={{ ['--enter-delay' as string]: '160ms' }} aria-label="AI recommendation">
+        <RecommendationPanel />
+      </aside>
+      <section className="strip panel panel-enter" style={{ ['--enter-delay' as string]: '240ms' }} aria-label="Supporting intelligence">
+        <IntelStrip />
+      </section>
+
+      <div className="viewport" ref={viewportRef}>
+        <div className="vp-tl panel-enter" style={{ ['--enter-delay' as string]: '300ms' }}>
+          <LayerPanel />
+        </div>
+        <div className="vp-tc">
+          <ScenarioCaption />
+          <CompareOverlay />
+        </div>
+        <div className="vp-tr panel-enter" style={{ ['--enter-delay' as string]: '340ms' }}>
+          <ViewToggles />
+          <CameraPresets />
+        </div>
+        <div className="vp-bc panel-enter" style={{ ['--enter-delay' as string]: '420ms' }}>
+          <ScenarioTransport />
+        </div>
+        <FutureOverlay />
+      </div>
+
+      {compact && (
+        <div className="drawer-toggles">
+          <button className={`ov-chip ${drawer === 'left' ? 'is-on' : ''}`} onClick={() => setDrawer(drawer === 'left' ? null : 'left')}>
+            <Activity size={14} /> Signals
+          </button>
+          <button className={`ov-chip ${drawer === 'right' ? 'is-on' : ''}`} onClick={() => setDrawer(drawer === 'right' ? null : 'right')}>
+            <ShieldCheck size={14} /> Action
+          </button>
+        </div>
+      )}
+
+      <ScenarioMenu />
+      <HoverTooltip />
+      <BootSequence />
+    </div>
+  );
+}
