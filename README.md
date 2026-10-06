@@ -130,7 +130,7 @@ npm run typecheck  # TypeScript only
 | X-ray | See through the city to the luminous networks (**X**) |
 | Exploded view | Separate surface / electricity / telecom / water / cooling / sewage like an engineering diagram (**E**) |
 | Layers | Emphasize one network (others dim) or hide networks (**L** toggles the panel) |
-| NOW / +48H | After a failure is predicted, simulate the city 48 h later if nothing is done (**F**) |
+| NOW / +48H | After a failure is predicted, simulate the city 48 h later if nothing is done: the main bursts (T+44 h), Riverside Avenue closes and ~20,200 residents are affected (**F**) |
 | Compare outcomes | After the repair: *No intervention* vs *AI-guided intervention* |
 | Scenario | Run / pause (**Space**), reset (**R**), skip to incident, click the progress bar to seek |
 | Esc | Close cards, comparison and popovers |
