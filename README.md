@@ -44,9 +44,9 @@ npm run typecheck  # TypeScript only
 | Area | Purpose |
 | --- | --- |
 | **Center — 3D twin** | Procedural city (56 buildings, roads, park, river, hospital, school, depot, pumping station, substation, cooling plant) sitting on a cut-away soil slab. Beneath it, five utility networks at believable depths with real elbows, junctions, flanges, valves, risers, access shafts and 24 sensors. |
-| **Left — Live signals** | Water pressure, ground moisture, temperature and network health with live sparklines and tolerance context, plus **Why this alert?** (feature contributions → combined confidence). |
-| **Right — AI recommendation** | Monitoring → analyzing → *INTERVENE* recommendation (priority, action, residents, hospital distance, preventive cost, avoided impact) → step-by-step repair plan → *FAILURE PREVENTED*. |
-| **Bottom — Intelligence strip** | The 4-stage AI pipeline, a one-line failure forecast (NOW → 72 h with the 36–52 h window), and *Fix before failure* economics ($180K preventive vs $1.8M failure → $1.62M avoided). |
+| **Left — Live signals** | Pressure, moisture, temperature and network health with sparklines; during an alert, a compact *why* panel (feature contributions → combined confidence). |
+| **Right — AI recommendation** | Monitoring → analyzing → *INTERVENE* (action, residents, hospital distance, $180K repair vs $1.62M saved) → repair steps → *FAILURE PREVENTED*. |
+| **Bottom — Playback bar** | Play / reset / skip plus the 4-stage AI pipeline (Detect → Predict → Prioritize → Plan). A small forecast card (NOW → 72 h, 36–52 h window) appears only while a failure is predicted. |
 
 ---
 
