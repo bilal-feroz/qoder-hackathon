@@ -36,7 +36,7 @@ function GridFloor() {
       new ShaderMaterial({
         transparent: true,
         depthWrite: false,
-        uniforms: { uExploded: G.uExploded, uColor: { value: new Color('#5f8db8') } },
+        uniforms: { uExploded: G.uExploded, uColor: { value: new Color('#2f3758') } },
         vertexShader: /* glsl */ `
           varying vec2 vXZ;
           uniform float uExploded;
@@ -91,7 +91,7 @@ function fitShadow(light: DirectionalLight) {
   let minD = Infinity;
   let maxD = -Infinity;
   const c = new Vector3();
-  for (const cx of [-82, 82])
+  for (const cx of [-98, 98])
     for (const cy of [-1, 34])
       for (const cz of [-70, 94]) {
         c.set(cx, cy, cz).sub(pos);
@@ -136,7 +136,7 @@ export function SceneEnvironment({ shadowSize = 4096 }: { shadowSize?: number })
       <SkyDome />
       <GridFloor />
       {/* cool sky dome above, warm bounce from the ground */}
-      <hemisphereLight args={['#8d9dbd', '#2a2219', 0.5]} />
+      <hemisphereLight args={['#dfe6f3', '#6b5a48', 0.95]} />
       {/* low golden sun: long shadows across the blocks */}
       <directionalLight
         ref={keyRef}

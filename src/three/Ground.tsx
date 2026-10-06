@@ -1,13 +1,12 @@
-import { useLayoutEffect, useMemo, useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
-import { BoxGeometry, InstancedBufferAttribute, InstancedMesh, Matrix4, Mesh, PlaneGeometry, Quaternion, Vector3 } from 'three';
-import { SECTORS, PLINTH, PLINTH_H, DIORAMA, RIVER } from '../data/city';
+import { BufferGeometry, Float32BufferAttribute, Mesh, PlaneGeometry } from 'three';
+import { DIORAMA, RIVER } from '../data/city';
+import { onLand } from '../data/abudhabi';
 import { TRENCH } from '../data/incident';
 import { live } from '../simulation/runtime';
 import { useTwinStore } from '../store/useTwinStore';
-import { createAsphaltMaterial, createPlinthMaterial, createPropMaterial, createSoilMaterial, createUndersideMaterial } from './materials/surfaceMaterials';
-
-const KIND_INDEX = { urban: 0, park: 1, yard: 2, campus: 3 } as const;
+import { createAsphaltMaterial, createPropMaterial, createSoilMaterial, createUndersideMaterial } from './materials/surfaceMaterials';
 
 /** Stops pointer events from reaching underground assets while the surface is opaque. */
 export function blockIfSolid(e: ThreeEvent<PointerEvent | MouseEvent>) {
@@ -17,111 +16,77 @@ export function blockIfSolid(e: ThreeEvent<PointerEvent | MouseEvent>) {
   e.stopPropagation();
 }
 
-function Plinths() {
-  const ref = useRef<InstancedMesh>(null);
-  const geometry = useMemo(() => {
-    const g = new BoxGeometry(1, 1, 1);
-    const kinds = new Float32Array(SECTORS.length);
-    const sec = new Float32Array(SECTORS.length);
-    SECTORS.forEach((s, i) => {
-      kinds[i] = KIND_INDEX[s.kind];
-      sec[i] = s.index;
-    });
-    g.setAttribute('aKind', new InstancedBufferAttribute(kinds, 1));
-    g.setAttribute('aSector', new InstancedBufferAttribute(sec, 1));
-    return g;
-  }, []);
-  const material = useMemo(() => createPlinthMaterial(), []);
+const W = DIORAMA.maxX - DIORAMA.minX;
+const D = DIORAMA.maxZ - DIORAMA.minZ;
+const CX = (DIORAMA.minX + DIORAMA.maxX) / 2;
+const CZ = (DIORAMA.minZ + DIORAMA.maxZ) / 2;
 
-  useLayoutEffect(() => {
-    const m = new Matrix4();
-    const q = new Quaternion();
-    const s = new Vector3(PLINTH, PLINTH_H, PLINTH);
-    SECTORS.forEach((sec, i) => {
-      m.compose(new Vector3(sec.x, PLINTH_H / 2, sec.z), q, s);
-      ref.current!.setMatrixAt(i, m);
-    });
-    ref.current!.instanceMatrix.needsUpdate = true;
-    ref.current!.computeBoundingSphere();
-  }, []);
-
-  const setHoverSector = useTwinStore((s) => s.setHoverSector);
-  const select = useTwinStore((s) => s.select);
-  const setPreset = useTwinStore((s) => s.setPreset);
-
-  return (
-    <instancedMesh
-      ref={ref}
-      args={[geometry, material, SECTORS.length]}
-      receiveShadow
-      onPointerMove={(e) => {
-        if (e.instanceId !== undefined) setHoverSector(SECTORS[e.instanceId].id);
-        blockIfSolid(e);
-      }}
-      onPointerOut={() => setHoverSector(null)}
-      onClick={(e) => {
-        if (e.delta > 4 || e.instanceId === undefined) return;
-        if (live.xray > 0.5 || live.exploded > 0.3) return;
-        e.stopPropagation();
-        const s = SECTORS[e.instanceId];
-        select({ info: { kind: 'sector', id: s.id }, point: [s.x, 0.4, s.z] });
-        if (s.id === 'B-12') setPreset('sector');
-      }}
-    />
-  );
+/** Vertical quads along a polyline (x, z) between two heights; faces right of the walking direction. */
+export function wall(points: [number, number][], y0: number, y1: number) {
+  const pos: number[] = [];
+  for (let i = 1; i < points.length; i++) {
+    const [ax, az] = points[i - 1];
+    const [bx, bz] = points[i];
+    pos.push(ax, y0, az, bx, y1, bz, bx, y0, bz, ax, y0, az, ax, y1, az, bx, y1, bz);
+  }
+  const g = new BufferGeometry();
+  g.setAttribute('position', new Float32BufferAttribute(pos, 3));
+  g.computeVertexNormals();
+  return g;
 }
 
-/** The cut faces of the diorama slab: soil strata exposed on every side. */
+/**
+ * The cut faces of the slab. Along each edge, land shows soil from the bottom up to
+ * street level; where the edge runs through the sea, soil stops at the sea bed.
+ */
 export function Diorama() {
   const soil = useMemo(() => createSoilMaterial(), []);
-  const bed = useMemo(() => createPropMaterial({ color: '#0d1114', roughness: 1 }), []);
+  const bed = useMemo(() => createPropMaterial({ color: '#b7a487', roughness: 1 }), []);
+  const water = useMemo(() => createPropMaterial({ color: '#1d5d6b', roughness: 0.2, opacity: 0.74 }), []);
   const B = DIORAMA.bottom;
-  const W = DIORAMA.maxX - DIORAMA.minX;
-  const faces = useMemo(() => {
-    type F = { pos: [number, number, number]; rotY: number; w: number; h: number };
-    const list: F[] = [];
-    const mainD = RIVER.minZ - DIORAMA.minZ; // 136
-    const mainCz = (RIVER.minZ + DIORAMA.minZ) / 2;
-    const chD = RIVER.maxZ - RIVER.minZ;
-    const chCz = (RIVER.minZ + RIVER.maxZ) / 2;
-    const bankD = DIORAMA.maxZ - RIVER.maxZ;
-    const bankCz = (RIVER.maxZ + DIORAMA.maxZ) / 2;
-    const fullH = -B;
-    // north face (faces -z)
-    list.push({ pos: [0, B / 2, DIORAMA.minZ], rotY: Math.PI, w: W, h: fullH });
-    // south face of the far bank (faces +z)
-    list.push({ pos: [0, B / 2, DIORAMA.maxZ], rotY: 0, w: W, h: fullH });
-    // west/east faces of the main slab
-    list.push({ pos: [DIORAMA.minX, B / 2, mainCz], rotY: -Math.PI / 2, w: mainD, h: fullH });
-    list.push({ pos: [DIORAMA.maxX, B / 2, mainCz], rotY: Math.PI / 2, w: mainD, h: fullH });
-    // channel block (below the river bed)
-    const chH = RIVER.bed - B;
-    list.push({ pos: [DIORAMA.minX, B + chH / 2, chCz], rotY: -Math.PI / 2, w: chD, h: chH });
-    list.push({ pos: [DIORAMA.maxX, B + chH / 2, chCz], rotY: Math.PI / 2, w: chD, h: chH });
-    // far bank west/east
-    list.push({ pos: [DIORAMA.minX, B / 2, bankCz], rotY: -Math.PI / 2, w: bankD, h: fullH });
-    list.push({ pos: [DIORAMA.maxX, B / 2, bankCz], rotY: Math.PI / 2, w: bankD, h: fullH });
-    // quay walls
-    const qh = -RIVER.bed;
-    list.push({ pos: [0, RIVER.bed / 2, RIVER.minZ], rotY: 0, w: W, h: qh });
-    list.push({ pos: [0, RIVER.bed / 2, RIVER.maxZ], rotY: Math.PI, w: W, h: qh });
-    return list;
-  }, [B, W]);
+  const { faces, waterFaces } = useMemo(() => {
+    const out: BufferGeometry[] = [];
+    const wet: BufferGeometry[] = [];
+    const edges: [number, number, number, number][] = [
+      [DIORAMA.minX, DIORAMA.minZ, DIORAMA.maxX, DIORAMA.minZ],
+      [DIORAMA.maxX, DIORAMA.minZ, DIORAMA.maxX, DIORAMA.maxZ],
+      [DIORAMA.maxX, DIORAMA.maxZ, DIORAMA.minX, DIORAMA.maxZ],
+      [DIORAMA.minX, DIORAMA.maxZ, DIORAMA.minX, DIORAMA.minZ],
+    ];
+    const step = 0.5;
+    for (const [ax, az, bx, bz] of edges) {
+      const L = Math.hypot(bx - ax, bz - az);
+      const n = Math.ceil(L / step);
+      let runStart = 0;
+      let runLand = onLand(ax + (bx - ax) * 0.001, az + (bz - az) * 0.001);
+      for (let i = 1; i <= n; i++) {
+        const t = i / n;
+        const land = i < n ? onLand(ax + (bx - ax) * t, az + (bz - az) * t) : !runLand;
+        if (land !== runLand || i === n) {
+          const t0 = runStart / n;
+          const p0: [number, number] = [ax + (bx - ax) * t0, az + (bz - az) * t0];
+          const p1: [number, number] = [ax + (bx - ax) * t, az + (bz - az) * t];
+          out.push(wall([p0, p1], B, runLand ? 0 : RIVER.bed));
+          if (!runLand) wet.push(wall([p0, p1], RIVER.bed, RIVER.level));
+          runStart = i;
+          runLand = land;
+        }
+      }
+    }
+    return { faces: out, waterFaces: wet };
+  }, [B]);
 
   return (
     <group>
-      {faces.map((f, i) => (
-        <mesh key={i} position={f.pos} rotation-y={f.rotY} material={soil}>
-          <planeGeometry args={[f.w, f.h, 1, 1]} />
-        </mesh>
+      {faces.map((g, i) => (
+        <mesh key={i} geometry={g} material={soil} />
       ))}
-      {/* river bed */}
-      <mesh rotation-x={-Math.PI / 2} position={[0, RIVER.bed, (RIVER.minZ + RIVER.maxZ) / 2]} material={bed}>
-        <planeGeometry args={[W, RIVER.maxZ - RIVER.minZ]} />
-      </mesh>
+      {waterFaces.map((g, i) => (
+        <mesh key={`w${i}`} geometry={g} material={water} />
+      ))}
       {/* bottom of the slab */}
-      <mesh rotation-x={Math.PI / 2} position={[0, B, (DIORAMA.minZ + DIORAMA.maxZ) / 2]} material={bed}>
-        <planeGeometry args={[W, DIORAMA.maxZ - DIORAMA.minZ]} />
+      <mesh rotation-x={Math.PI / 2} position={[CX, B, CZ]} material={bed}>
+        <planeGeometry args={[W, D]} />
       </mesh>
     </group>
   );
@@ -130,8 +95,7 @@ export function Diorama() {
 export function Ground() {
   const asphalt = useMemo(() => createAsphaltMaterial(), []);
   const underside = useMemo(() => createUndersideMaterial(), []);
-  const bankGeo = useMemo(() => new PlaneGeometry(DIORAMA.maxX - DIORAMA.minX, DIORAMA.maxZ - RIVER.maxZ, 1, 1), []);
-  const groundGeo = useMemo(() => new PlaneGeometry(DIORAMA.maxX - DIORAMA.minX, RIVER.minZ - DIORAMA.minZ, 1, 1), []);
+  const groundGeo = useMemo(() => new PlaneGeometry(W, D, 1, 1), []);
   const select = useTwinStore((s) => s.select);
   const undersideRef = useRef<Mesh>(null);
 
@@ -144,7 +108,7 @@ export function Ground() {
       <mesh
         geometry={groundGeo}
         rotation-x={-Math.PI / 2}
-        position={[0, 0, (DIORAMA.minZ + RIVER.minZ) / 2]}
+        position={[CX, 0, CZ]}
         material={asphalt}
         receiveShadow
         onPointerMove={blockIfSolid}
@@ -154,11 +118,9 @@ export function Ground() {
         }}
         onDoubleClick={() => select(null)}
       />
-      <mesh geometry={bankGeo} rotation-x={-Math.PI / 2} position={[0, 0, (RIVER.maxZ + DIORAMA.maxZ) / 2]} material={asphalt} receiveShadow />
-      <mesh ref={undersideRef} rotation-x={Math.PI / 2} position={[0, -0.04, (DIORAMA.minZ + RIVER.minZ) / 2]} material={underside}>
-        <planeGeometry args={[DIORAMA.maxX - DIORAMA.minX, RIVER.minZ - DIORAMA.minZ]} />
+      <mesh ref={undersideRef} rotation-x={Math.PI / 2} position={[CX, -0.04, (DIORAMA.minZ + RIVER.minZ) / 2]} material={underside}>
+        <planeGeometry args={[W, RIVER.minZ - DIORAMA.minZ]} />
       </mesh>
-      <Plinths />
     </group>
   );
 }

@@ -1,4 +1,5 @@
-import { STREET_X, STREET_Z, DIORAMA, RIVER, sectorAt, PUMP_POS, SUBSTATION_POS, EXCHANGE_POS, COOLING_PLANT_POS, UNIT_METERS } from './city';
+import { DIORAMA, sectorAt, UNIT_METERS } from './city';
+import { AD, onLand, place } from './abudhabi';
 import { mulberry32, hashString } from './rng';
 
 export type LayerId = 'electric' | 'telecom' | 'water' | 'cooling' | 'sewage';
@@ -175,9 +176,6 @@ class NetBuilder {
   risers: Riser[] = [];
   constructor(public layer: LayerDef, public offset: number) {}
 
-  lx = (i: number) => STREET_X[i] + this.offset;
-  lz = (j: number) => STREET_Z[j] + this.offset;
-
   node(x: number, z: number) {
     const k = key(x, z);
     if (!this.nodes.has(k)) this.nodes.set(k, { x, z });
@@ -192,24 +190,38 @@ class NetBuilder {
     this.edges.push({ a, b, trunk, radiusScale });
   }
 
-  /** E-W line along street j between N-S streets i0..i1 */
-  ew(j: number, i0: number, i1: number, trunk = false, rs = 1) {
-    for (let i = i0; i < i1; i++) this.edge(this.lx(i), this.lz(j), this.lx(i + 1), this.lz(j), trunk, rs);
-  }
-
-  /** N-S line along street i between E-W streets j0..j1 */
-  ns(i: number, j0: number, j1: number, trunk = false, rs = 1) {
-    for (let j = j0; j < j1; j++) this.edge(this.lx(i), this.lz(j), this.lx(i), this.lz(j + 1), trunk, rs);
-  }
-
-  stubW(j: number) {
-    this.edge(DIORAMA.minX, this.lz(j), this.lx(0), this.lz(j));
-  }
-  stubE(j: number) {
-    this.edge(this.lx(5), this.lz(j), DIORAMA.maxX, this.lz(j));
-  }
-  stubN(i: number) {
-    this.edge(this.lx(i), DIORAMA.minZ, this.lx(i), this.lz(0));
+  /** Keep only the biggest connected piece so no pipe floats on its own. */
+  keepLargestComponent() {
+    const adj = new Map<string, number[]>();
+    this.edges.forEach((e, i) => {
+      adj.set(e.a, [...(adj.get(e.a) ?? []), i]);
+      adj.set(e.b, [...(adj.get(e.b) ?? []), i]);
+    });
+    const seen = new Set<string>();
+    let best: Set<number> = new Set();
+    for (const start of adj.keys()) {
+      if (seen.has(start)) continue;
+      const comp = new Set<number>();
+      const stack = [start];
+      seen.add(start);
+      while (stack.length) {
+        const k = stack.pop()!;
+        for (const ei of adj.get(k) ?? []) {
+          comp.add(ei);
+          const e = this.edges[ei];
+          for (const n of [e.a, e.b]) {
+            if (!seen.has(n)) {
+              seen.add(n);
+              stack.push(n);
+            }
+          }
+        }
+      }
+      if (comp.size > best.size) best = comp;
+    }
+    this.edges = this.edges.filter((_, i) => best.has(i));
+    const keep = new Set(this.edges.flatMap((e) => [e.a, e.b]));
+    for (const k of [...this.nodes.keys()]) if (!keep.has(k)) this.nodes.delete(k);
   }
 
   riser(x: number, z: number, top = 0.15) {
@@ -324,7 +336,7 @@ function build(layerId: LayerId, variant: 'main' | 'supply' | 'return', offset: 
 
   const keys = [...b.nodes.keys()];
   const sourceKey = key(source[0], source[1]);
-  const leakIdx = layerId === 'water' ? findLeakEdge(b) : -1;
+  const leakIdx = layerId === 'water' ? nearestEdge(b, LEAK_AT[0], LEAK_AT[1]) : -1;
   const dist = dijkstra(keys, b.nodes, b.edges, sourceKey);
   const distIso = leakIdx >= 0 ? dijkstra(keys, b.nodes, b.edges, sourceKey, leakIdx) : dist;
 
@@ -384,125 +396,171 @@ function build(layerId: LayerId, variant: 'main' | 'supply' | 'return', offset: 
   const nodes: NetNode[] = keys.map((k) => {
     const p = b.nodes.get(k)!;
     const edges = segments.filter((s) => key(s.a[0], s.a[1]) === k || key(s.b[0], s.b[1]) === k).map((s) => s.index);
-    const boundary = Math.abs(p.x - DIORAMA.minX) < 1e-3 || Math.abs(p.x - DIORAMA.maxX) < 1e-3 || Math.abs(p.z - DIORAMA.minZ) < 1e-3 || Math.abs(p.z - RIVER.minZ) < 1e-3;
+    const boundary = Math.abs(p.x - DIORAMA.minX) < 1e-3 || Math.abs(p.x - DIORAMA.maxX) < 1e-3 || Math.abs(p.z - DIORAMA.minZ) < 1e-3 || Math.abs(p.z - DIORAMA.maxZ) < 1e-3;
     return { key: k, x: p.x, z: p.z, y: layer.depth, edges, boundary };
   });
 
   return { layer, variant, segments, nodes, risers: b.risers, sourceKey };
 }
 
-function findLeakEdge(b: NetBuilder) {
-  const ax = b.lx(2);
-  const bx = b.lx(3);
-  const z = b.lz(2);
-  return b.edges.findIndex((e) => {
+/* ------------------------------------------------------------------ */
+/* Real streets → pipe routes                                          */
+/* ------------------------------------------------------------------ */
+
+/** The demo leak sits on the water main beside Khalifa Street, at the scene origin. */
+const LEAK_AT: [number, number] = [1.5, LAYERS.water.offset];
+
+/** Street centre-line pieces from OpenStreetMap (underpasses and footpaths excluded). */
+const STREET_EDGES = AD.roads.filter((r) => r.c !== 'pedestrian').flatMap((r) => r.p.slice(1).map((q, i) => ({ a: r.p[i], b: q, cls: r.c })));
+
+/** Clip a segment to the slab so pipes end flush with its cut faces. */
+function clipToSlab(ax: number, az: number, bx: number, bz: number): [number, number, number, number] | null {
+  let t0 = 0;
+  let t1 = 1;
+  const dx = bx - ax;
+  const dz = bz - az;
+  for (const [p, q] of [
+    [-dx, ax - DIORAMA.minX],
+    [dx, DIORAMA.maxX - ax],
+    [-dz, az - DIORAMA.minZ],
+    [dz, DIORAMA.maxZ - az],
+  ]) {
+    if (p === 0) {
+      if (q < 0) return null;
+    } else {
+      const r = q / p;
+      if (p < 0) t0 = Math.max(t0, r);
+      else t1 = Math.min(t1, r);
+      if (t0 > t1) return null;
+    }
+  }
+  return [ax + dx * t0, az + dz * t0, ax + dx * t1, az + dz * t1];
+}
+
+/** One utility under every street of the given classes, shifted sideways like a real service corridor. */
+function underStreets(b: NetBuilder, classes: RegExp, trunk?: RegExp, near?: [number, number, number]) {
+  const o = b.offset;
+  for (const e of STREET_EDGES) {
+    if (!classes.test(e.cls)) continue;
+    const mx = (e.a[0] + e.b[0]) / 2 + o;
+    const mz = (e.a[1] + e.b[1]) / 2 + o;
+    if (near && Math.hypot(mx - near[0], mz - near[1]) > near[2]) continue;
+    if (!onLand(mx, mz)) continue;
+    const c = clipToSlab(e.a[0] + o, e.a[1] + o, e.b[0] + o, e.b[1] + o);
+    if (c) b.edge(c[0], c[1], c[2], c[3], !!trunk?.test(e.cls));
+  }
+  b.keepLargestComponent();
+}
+
+function nearestNode(b: NetBuilder, x: number, z: number): [number, number] {
+  let best: [number, number] = [x, z];
+  let bd = Infinity;
+  for (const n of b.nodes.values()) {
+    const d = Math.hypot(n.x - x, n.z - z);
+    if (d < bd) {
+      bd = d;
+      best = [n.x, n.z];
+    }
+  }
+  return best;
+}
+
+function nearestEdge(b: NetBuilder, x: number, z: number) {
+  let best = -1;
+  let bd = Infinity;
+  b.edges.forEach((e, i) => {
     const A = b.nodes.get(e.a)!;
     const B = b.nodes.get(e.b)!;
-    return Math.abs(A.z - z) < 1e-6 && Math.abs(B.z - z) < 1e-6 && Math.min(A.x, B.x) === Math.min(ax, bx) && Math.max(A.x, B.x) === Math.max(ax, bx);
+    const L2 = (B.x - A.x) ** 2 + (B.z - A.z) ** 2 || 1e-9;
+    const t = Math.max(0, Math.min(1, ((x - A.x) * (B.x - A.x) + (z - A.z) * (B.z - A.z)) / L2));
+    const d = Math.hypot(A.x + t * (B.x - A.x) - x, A.z + t * (B.z - A.z) - z);
+    if (d < bd) {
+      bd = d;
+      best = i;
+    }
   });
+  return best;
+}
+
+/** Segment indices along the shortest way between two nodes, avoiding one segment. */
+function shortestPath(segments: PipeSegment[], from: string, to: string, skip: number) {
+  const adj = new Map<string, { to: string; w: number; i: number }[]>();
+  for (const s of segments) {
+    if (s.index === skip) continue;
+    const a = key(s.a[0], s.a[1]);
+    const b = key(s.b[0], s.b[1]);
+    adj.set(a, [...(adj.get(a) ?? []), { to: b, w: s.length, i: s.index }]);
+    adj.set(b, [...(adj.get(b) ?? []), { to: a, w: s.length, i: s.index }]);
+  }
+  const dist = new Map<string, number>([[from, 0]]);
+  const via = new Map<string, { prev: string; i: number }>();
+  const open = new Set([from]);
+  while (open.size) {
+    let cur = '';
+    let cd = Infinity;
+    for (const k of open) {
+      const d = dist.get(k)!;
+      if (d < cd) {
+        cd = d;
+        cur = k;
+      }
+    }
+    open.delete(cur);
+    if (cur === to) break;
+    for (const e of adj.get(cur) ?? []) {
+      const nd = cd + e.w;
+      if (nd < (dist.get(e.to) ?? Infinity)) {
+        dist.set(e.to, nd);
+        via.set(e.to, { prev: cur, i: e.i });
+        open.add(e.to);
+      }
+    }
+  }
+  const out: number[] = [];
+  for (let k = to; via.has(k); k = via.get(k)!.prev) out.push(via.get(k)!.i);
+  return out;
 }
 
 const WATER = build('water', 'main', LAYERS.water.offset, (b) => {
-  for (let j = 0; j <= 4; j++) b.ew(j, 0, 5);
-  for (let i = 0; i <= 5; i++) b.ns(i, 0, 4, i === 2);
-  [1, 2, 3].forEach((j) => {
-    b.stubW(j);
-    b.stubE(j);
-  });
-  [2, 3].forEach((i) => b.stubN(i));
-  // pumping station: connector to the trunk + river intake
-  const px = PUMP_POS.x;
-  const pz = 46;
-  b.edge(px, pz, b.lx(2), pz, true, 1.1);
-  b.edge(px, pz, px, RIVER.minZ, true, 1.1);
-  b.riser(px, pz);
-  return { source: [px, pz] };
+  underStreets(b, /^(trunk|primary|secondary|tertiary|unclassified)$/, /^(trunk|primary)$/);
+  return { source: nearestNode(b, 40, DIORAMA.minZ) };
 });
 
+const SUBSTATION = place('substation');
 const ELECTRIC = build('electric', 'main', LAYERS.electric.offset, (b) => {
-  b.ew(1, 0, 5);
-  b.ew(2, 0, 5);
-  b.ew(3, 1, 5);
-  b.ns(4, 0, 4, true);
-  b.ns(2, 1, 3);
-  b.ns(1, 1, 4);
-  [1, 2].forEach((j) => b.stubW(j));
-  b.stubE(2);
-  b.stubN(4);
-  const sx = SUBSTATION_POS.x - 3;
-  const sz = -40;
-  b.edge(b.lx(4), sz, sx, sz, true);
-  b.riser(sx, sz);
-  return { source: [sx, sz] };
+  underStreets(b, /^(primary|secondary|tertiary)$/, /^primary$/);
+  const src = nearestNode(b, SUBSTATION?.x ?? 0, SUBSTATION?.z ?? 20);
+  b.riser(src[0], src[1]);
+  return { source: src };
 });
 
 const TELECOM = build('telecom', 'main', LAYERS.telecom.offset, (b) => {
-  b.ew(1, 0, 5);
-  b.ew(2, 0, 5);
-  b.ew(3, 0, 4);
-  b.ns(1, 0, 4);
-  b.ns(3, 1, 3);
-  b.ns(4, 1, 4);
-  [1, 2].forEach((j) => {
-    b.stubW(j);
-    b.stubE(j);
-  });
-  b.stubN(1);
-  const ex = EXCHANGE_POS.x + 4;
-  const ez = -44;
-  b.edge(ex, ez, b.lx(1), ez);
-  b.riser(ex, ez);
-  return { source: [ex, ez] };
+  underStreets(b, /^(trunk|primary|secondary)$/);
+  return { source: nearestNode(b, DIORAMA.minX, 0) };
 });
 
+/** District cooling serves the tower cluster around The Landmark and ADIA. */
+const COOLING_AREA: [number, number, number] = [72, 4, 32];
 function coolingDef(b: NetBuilder) {
-  b.ew(0, 2, 3);
-  b.ew(1, 1, 4);
-  b.ew(2, 2, 3);
-  b.ns(2, 0, 2);
-  b.ns(3, 0, 2);
-  b.ns(1, 1, 2);
-  b.stubN(2);
-  const cx = COOLING_PLANT_POS.x + 5;
-  const cz = -18 + b.offset;
-  b.edge(cx, cz, b.lx(2), cz, true);
-  b.riser(cx, cz);
-  return { source: [cx, cz] as [number, number] };
+  underStreets(b, /^(primary|secondary|tertiary|unclassified|residential)$/, /^(primary|secondary)$/, COOLING_AREA);
+  const src = nearestNode(b, 86, 14);
+  b.riser(src[0], src[1]);
+  return { source: src as [number, number] };
 }
 
 const COOLING_SUPPLY = build('cooling', 'supply', LAYERS.cooling.offset - 0.5, coolingDef);
 const COOLING_RETURN = build('cooling', 'return', LAYERS.cooling.offset + 0.5, (b) => ({ ...coolingDef(b), sink: true }));
 
 const SEWAGE = build('sewage', 'main', LAYERS.sewage.offset, (b) => {
-  for (let i = 1; i <= 4; i++) b.ns(i, 0, 4);
-  b.ew(1, 0, 5);
-  b.ew(2, 0, 5);
-  b.ew(3, 0, 5);
-  b.ew(4, 0, 5, true);
-  b.ns(0, 3, 4);
-  b.stubW(4);
-  [1, 2, 3, 4].forEach((i) => b.stubN(i));
-  return { source: [DIORAMA.minX, b.lz(4)], sink: true };
+  underStreets(b, /^(trunk|primary|secondary|tertiary|unclassified|residential)$/, /^(trunk|primary)$/);
+  return { source: nearestNode(b, -60, DIORAMA.minZ), sink: true };
 });
 
-// mark the reroute detour around B-12 on the water network
+// water detours around the isolated segment along the shortest way between its two ends
 (() => {
-  const lx = (i: number) => STREET_X[i] + LAYERS.water.offset;
-  const lz = (j: number) => STREET_Z[j] + LAYERS.water.offset;
-  const onPath = (s: PipeSegment) => {
-    const [ax, az] = s.a;
-    const [bx, bz] = s.b;
-    const vert = Math.abs(ax - bx) < 1e-6;
-    const horiz = Math.abs(az - bz) < 1e-6;
-    const inZ = (z: number) => z >= lz(1) - 1e-6 && z <= lz(2) + 1e-6;
-    const inX = (x: number) => x >= lx(2) - 1e-6 && x <= lx(3) + 1e-6;
-    if (vert && (Math.abs(ax - lx(2)) < 1e-6 || Math.abs(ax - lx(3)) < 1e-6) && inZ(az) && inZ(bz)) return true;
-    if (horiz && Math.abs(az - lz(1)) < 1e-6 && inX(ax) && inX(bx)) return true;
-    return false;
-  };
-  WATER.segments.forEach((s) => {
-    s.reroute = onPath(s);
-  });
+  const leak = WATER.segments.find((sg) => sg.id === INCIDENT_SEGMENT_ID);
+  if (!leak) return;
+  for (const i of shortestPath(WATER.segments, key(leak.a[0], leak.a[1]), key(leak.b[0], leak.b[1]), leak.index)) WATER.segments[i].reroute = true;
 })();
 
 export const NETWORKS: Network[] = [ELECTRIC, TELECOM, WATER, COOLING_SUPPLY, COOLING_RETURN, SEWAGE];

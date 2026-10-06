@@ -2,6 +2,7 @@ import { Color, MeshBasicMaterial, MeshStandardMaterial, type ColorRepresentatio
 import { G } from '../shaders/globals';
 import { GLSL_COMMON, GLSL_STRATA } from '../shaders/glsl';
 import { patchMaterial, WORLDPOS_FRAG_HEAD, WORLDPOS_VERT_END, WORLDPOS_VERT_HEAD } from '../shaders/patch';
+import { GROUND_RECT, groundTexture } from '../groundMap';
 
 /* ------------------------------------------------------------------ */
 /* Road surface (asphalt + markings) — shared by the ground plane and  */
@@ -9,120 +10,27 @@ import { patchMaterial, WORLDPOS_FRAG_HEAD, WORLDPOS_VERT_END, WORLDPOS_VERT_HEA
 /* ------------------------------------------------------------------ */
 
 export const ROAD_GLSL = /* glsl */ `
-const float SXs[6] = float[6](-70.0, -42.0, -14.0, 14.0, 42.0, 70.0);
-const float SZs[5] = float[5](-58.0, -30.0, 0.0, 30.0, 58.0);
-const float SZW[5] = float[5](8.0, 8.0, 12.0, 8.0, 8.0);
+uniform sampler2D uGroundMap;
+uniform vec4 uGroundRect;
 
-float stripe(float x, float duty) {
-  float t = abs(fract(x) - 0.5) * 2.0;
-  float fw = fwidth(x) * 2.0 + 1e-4;
-  float s = smoothstep(1.0 - duty - fw, 1.0 - duty + fw, t);
-  return mix(s, duty, smoothstep(0.4, 0.9, fw));
-}
+struct RoadSample { vec3 color; vec3 emissive; float road; float rough; float land; };
 
-struct RoadSample { vec3 color; vec3 emissive; float road; float rough; };
-
-/* white, yellow and green paint for one street cross-section (lat = signed offset from the centre line) */
-vec3 laneMarks(float lat, float along, float wide) {
-  float a = abs(lat);
-  float white = 0.0;
-  float yellow = 0.0;
-  float green = 0.0;
-  if (wide < 0.5) {
-    yellow = aaBand(a - 0.075, 0.024);
-    white = aaBand(a - 1.1, 0.022) * stripe(along / 2.4, 0.42);
-    white = max(white, aaBand(a - 2.02, 0.02));
-    float tick = aaBand((fract(along / 0.85 + 0.5) - 0.5) * 0.85, 0.014) * step(2.02, a) * step(a, 2.34);
-    white = max(white, tick);
-  } else {
-    yellow = aaBand(a - 0.55, 0.026);
-    float hatch = stripe((along + lat) / 0.5, 0.2) * step(a, 0.5);
-    yellow = max(yellow, hatch * 0.8);
-    white = aaBand(a - 1.45, 0.022) * stripe(along / 2.4, 0.42);
-    white = max(white, aaBand(a - 2.35, 0.022) * stripe(along / 2.4, 0.42));
-    white = max(white, aaBand(a - 3.3, 0.026));
-    green = step(3.33, a) * step(a, 3.79);
-    white = max(white, aaBand(a - 3.81, 0.018));
-    float tick = aaBand((fract(along / 0.85 + 0.5) - 0.5) * 0.85, 0.014) * step(3.83, a) * step(a, 4.24);
-    white = max(white, tick);
-  }
-  return vec3(white, yellow, green);
-}
-
+/* Real downtown Abu Dhabi: paving, parks, road shapes and markings come from the
+   painted ground map (OpenStreetMap); the shader adds grain and wear on top. */
 RoadSample roadSample(vec2 p) {
   RoadSample r;
-  float dz = 1e4; float hz = 2.5; int jz = 0; float zc = 0.0;
-  for (int j = 0; j < 5; j++) {
-    float d = abs(p.y - SZs[j]);
-    if (d < dz) { dz = d; jz = j; zc = SZs[j]; hz = SZW[j] * 0.5 - 1.5; }
-  }
-  float dx = 1e4; float xc = 0.0;
-  for (int i = 0; i < 6; i++) {
-    float d = abs(p.x - SXs[i]);
-    if (d < dx) { dx = d; xc = SXs[i]; }
-  }
-  float hx = 2.5;
-  bool inEW = dz < hz && abs(p.x) < 72.5;
-  bool inNS = dx < hx && abs(p.y) < 60.5;
-
-  // aged asphalt: aggregate grain, repair patches, darker wheel paths
+  vec2 uv = (p - uGroundRect.xy) * uGroundRect.zw;
+  vec4 m = texture2D(uGroundMap, vec2(uv.x, 1.0 - uv.y));
+  r.land = m.a;
+  vec3 c = m.rgb;
+  float lum = dot(c, vec3(0.299, 0.587, 0.114));
+  r.road = 1.0 - smoothstep(0.06, 0.12, lum);
   float n1 = gfbm(p * 0.21);
-  vec3 asphalt = vec3(0.078, 0.08, 0.086) * (0.84 + 0.3 * n1);
-  float patchN = gnoise(p * 0.06 + 13.0);
-  asphalt = mix(asphalt, asphalt * 0.78, smoothstep(0.66, 0.7, patchN));
-  asphalt *= 0.92 + 0.14 * gh21(floor(p * 9.0));
-
-  // concrete pavers outside the carriageways
-  vec3 paving = vec3(0.22, 0.215, 0.21) * (0.9 + 0.14 * gnoise(p * 0.7));
-  float jx = abs(fract(p.x / 1.5) - 0.5) * 2.0;
-  float jzz = abs(fract(p.y / 1.5) - 0.5) * 2.0;
-  paving *= 1.0 - 0.16 * max(smoothstep(0.92, 0.98, jx), smoothstep(0.92, 0.98, jzz));
-
-  float line = 0.0;
-  float yellow = 0.0;
-  float green = 0.0;
-  float wheel = 0.0;
-  if (inEW && !inNS) {
-    float sz = p.y - zc;
-    vec3 m = laneMarks(sz, p.x, jz == 2 ? 1.0 : 0.0);
-    line = m.x; yellow = m.y; green = m.z;
-    float lw = jz == 2 ? 0.9 : 0.95;
-    wheel = 1.0 - smoothstep(0.0, 0.16, abs(abs(fract(abs(sz) / lw) - 0.5) - 0.17));
-    float ax = abs(p.x - xc);
-    float cw = step(hx + 0.35, ax) * step(ax, hx + 2.0) * step(abs(sz), hz - 0.35);
-    line = max(line, cw * stripe(sz / 0.8, 0.5));
-    line = max(line, step(hx + 2.3, ax) * step(ax, hx + 2.55) * step(abs(sz), hz - 0.2) * step((p.x - xc) * sz, 0.0));
-    // no lane paint across the crossings
-    float clear = step(ax, hx + 2.6);
-    yellow *= 1.0 - clear; green *= 1.0 - clear;
-    line = mix(line, max(cw * stripe(sz / 0.8, 0.5), step(hx + 2.3, ax) * step(ax, hx + 2.55) * step(abs(sz), hz - 0.2) * step((p.x - xc) * sz, 0.0)), clear);
-  }
-  if (inNS && !inEW) {
-    float sx = p.x - xc;
-    vec3 m = laneMarks(sx, p.y, 0.0);
-    line = m.x; yellow = m.y;
-    wheel = 1.0 - smoothstep(0.0, 0.16, abs(abs(fract(abs(sx) / 0.95) - 0.5) - 0.17));
-    float az = abs(p.y - zc);
-    float hzz = hz;
-    float cw = step(hzz + 0.35, az) * step(az, hzz + 2.0) * step(abs(sx), hx - 0.35);
-    float stopL = step(hzz + 2.3, az) * step(az, hzz + 2.55) * step(abs(sx), hx - 0.2) * step(0.0, (p.y - zc) * sx);
-    float clear = step(az, hzz + 2.6);
-    yellow *= 1.0 - clear;
-    line = mix(line, max(cw * stripe(sx / 0.8, 0.5), stopL), clear);
-  }
-  r.road = (inEW || inNS) ? 1.0 : 0.0;
-  asphalt *= 1.0 - 0.1 * wheel * r.road;
-  vec3 c = r.road > 0.5 ? asphalt : paving;
-  vec3 lineCol = vec3(0.74, 0.74, 0.72);
-  vec3 yel = vec3(0.84, 0.6, 0.16);
-  vec3 grn = vec3(0.12, 0.3, 0.17);
-  float wornL = 0.78 + 0.22 * gnoise(p * 1.7);
-  c = mix(c, grn, green * r.road * 0.9);
-  c = mix(c, lineCol, line * r.road * 0.85 * wornL);
-  c = mix(c, yel, yellow * r.road * 0.85 * wornL);
+  c *= 0.9 + 0.16 * n1;
+  c *= 1.0 - 0.06 * r.road * (1.0 - gh21(floor(p * 9.0)));
   r.color = c;
-  r.rough = mix(0.86, 0.6, max(line, yellow) * r.road);
-  r.emissive = (lineCol * line + yel * yellow) * 0.012 * r.road;
+  r.rough = mix(0.86, 0.9, r.road);
+  r.emissive = vec3(0.0);
   return r;
 }
 `;
@@ -142,7 +50,13 @@ vec3 xrayGrid(vec2 p) {
 }
 `;
 
+export const GROUND_MAP_UNIFORMS = {
+  uGroundMap: { value: groundTexture() },
+  uGroundRect: { value: GROUND_RECT },
+};
+
 const GROUND_UNIFORMS = {
+  ...GROUND_MAP_UNIFORMS,
   uTime: G.uTime,
   uXray: G.uXray,
   uTrench: G.uTrench,
@@ -170,6 +84,7 @@ export function createAsphaltMaterial() {
       vec2 gp = vWPos.xz;
       if (gp.x > uTrenchRect.x && gp.x < uTrenchRect.z && gp.y > uTrenchRect.y && gp.y < uTrenchRect.w) discard;
       RoadSample rs = roadSample(gp);
+      if (rs.land < 0.5) discard;
       diffuseColor.rgb = rs.color;
     `,
     fragmentEmissive: /* glsl */ `

@@ -19,7 +19,7 @@ function Monitoring() {
     <div className="rec-block">
       <div className="rec-badge tone-ok">
         <ShieldCheck size={18} />
-        <span>MONITORING</span>
+        <span>All clear</span>
       </div>
       <p className="rec-lede">No action needed.</p>
     </div>
@@ -35,10 +35,10 @@ function Analyzing() {
         <span>{snap.localized ? 'ASSESSING' : 'ANALYZING'}</span>
       </div>
       <ul className="evi-list">
-        <Evidence on={snap.patternDetected} icon={<MapPin size={13} />} title="Sector" value="B-12" tone="warn" />
+        <Evidence on={snap.patternDetected} icon={<MapPin size={13} />} title="Area" value="B-12" tone="warn" />
         <Evidence on={snap.localized} icon={<AlertOctagon size={13} />} title="Leak" value={`${INCIDENT.confidence}%`} />
-        <Evidence on={snap.prediction} icon={<Clock3 size={13} />} title="Failure in" value={`${INCIDENT.failureWindow[0]}–${INCIDENT.failureWindow[1]} h`} />
-        <Evidence on={snap.impact} icon={<Users size={13} />} title="Residents" value={INCIDENT.population.toLocaleString('en-US')} />
+        <Evidence on={snap.prediction} icon={<Clock3 size={13} />} title="Could break in" value={`${INCIDENT.failureWindow[0]}–${INCIDENT.failureWindow[1]} h`} />
+        <Evidence on={snap.impact} icon={<Users size={13} />} title="People affected" value={INCIDENT.population.toLocaleString('en-US')} />
       </ul>
     </div>
   );
@@ -61,15 +61,15 @@ function Recommendation() {
       <div className="rec-top">
         <div className="rec-badge tone-alert big">
           <AlertOctagon size={20} />
-          <span>INTERVENE</span>
+          <span>Act now</span>
         </div>
         <div className="rec-priority">
-          <b>CRITICAL</b>
+          <b>Urgent</b>
         </div>
       </div>
       <div className="rec-action">
         <span className="rec-action-text">Repair within {INCIDENT.respondWithinHours} h</span>
-        <span className="rec-action-where">Sector B-12</span>
+        <span className="rec-action-where">Area B-12</span>
       </div>
       {!repairOpen && (
         <>
@@ -125,7 +125,7 @@ function Resolved() {
     <div className="rec-block rec-enter">
       <div className="rec-badge tone-ok big">
         <ShieldCheck size={20} />
-        <span>FAILURE PREVENTED</span>
+        <span>Prevented</span>
       </div>
       <div className="rec-kpis">
         <Kpi value="12,400" label="protected" good />
@@ -158,7 +158,7 @@ export function RecommendationPanel() {
   return (
     <div className="rail-inner">
       <header className="rail-head">
-        <span className="rail-title">AI recommendation</span>
+        <span className="rail-title">What Pioneer suggests</span>
       </header>
       <div className="rec-scroll">
         {key === 'monitor' && <Monitoring />}

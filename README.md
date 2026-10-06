@@ -68,42 +68,47 @@ The system transitions from an analytical twin to an operational coordinator, ge
 
 ---
 
-# Demo app — AI Infrastructure Guardian *(The City That Heals Itself)*
+# Demo app — Pioneer *(The city that fixes itself first)*
 
-An interactive, predictive **digital twin of a city's hidden infrastructure**, built with Three.js.
-It watches simulated sensor streams for water, electricity, telecom, sewage and district cooling,
-notices small anomalies that individually look harmless, correlates them, and then:
+Pioneer is a 3D twin of downtown Abu Dhabi with a team of AI agents that look after the pipes and cables under the streets.
+They spot a problem early, pick the safest fix, send the right crew and check the result. You decide how much they can do alone.
 
-**DETECT → PREDICT → PRIORITIZE → PLAN**
+**Spot → Plan → Fix → Check**
 
-* **Detect** — fuses weak signals (pressure −2.7 %, soil moisture +18 %, ground temperature +4 %) into one pattern.
-* **Predict** — localizes the source (water main `WTR-B12-04`, 93 % confidence) and forecasts failure in **36–52 h**.
-* **Prioritize** — maps who is affected: ~12,400 residents, a hospital 320 m away, a school 480 m away, a road at risk.
-* **Plan** — recommends and visualizes the intervention: isolate valves, reroute supply, dispatch a crew, replace the section, pressure-test.
+* **Spot** — weak signals (pressure −2.7 %, wet ground, warmer soil) add up to one likely leak under Khalifa Street (93 % sure, could burst in 36–52 h).
+* **Plan** — six agents compare fixes (replace, clamp, wait), crews and road closures, and show what they checked.
+* **Fix** — valves close, water is sent another way, and Crew 07 drives real streets to the site while everyday traffic flows around it.
+* **Check** — pressure is tested, the lesson is saved, and the outcome is compared with doing nothing.
 
-The point of the product: *the city never visibly breaks*, because people act before the pipe fails.
-
-> **Prototype using simulated infrastructure telemetry.** It is not connected to any real municipal network.
-> Every sensor value, asset, cost and forecast in this repository is demo simulation.
+> **Demo.** The streets, buildings, parks and coastline are real (OpenStreetMap). The pipes, sensors, crews, costs and the
+> leak are made up. Nothing is connected to a real utility network.
 
 ---
 
 ## Quick start
 
-Requires Node.js 18+ (tested with Node 22).
+Requires Node.js 18+ (tested with Node 24).
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open the printed URL (default <http://localhost:5173>). Press **Run failure scenario**.
+Open <http://localhost:5173>.
 
-Other scripts:
+| URL | What opens |
+| --- | --- |
+| `/` | Landing page |
+| `/#twin` | The 3D twin |
+| `/#demo` | The twin, then the one-minute story plays by itself |
+
+**Optional: "Ask the agents" with Qwen.** Copy `.env.example` to `.env.local` and fill in the Alibaba Cloud Model Studio key.
+The key stays on the dev/preview server (`/api/ask` in `vite.config.ts`) and never reaches the browser. Without a key the
+same box answers from built-in rules.
 
 ```bash
 npm run build      # type-check + production build into dist/
-npm run preview    # serve the production build locally
+npm run preview    # serve the production build (also serves /api/ask)
 npm run typecheck  # TypeScript only
 ```
 
@@ -113,10 +118,12 @@ npm run typecheck  # TypeScript only
 
 | Area | Purpose |
 | --- | --- |
-| **Center — 3D twin** | Procedural city (56 buildings, roads, park, river, hospital, school, depot, pumping station, substation, cooling plant) sitting on a cut-away soil slab. Beneath it, five utility networks at believable depths with real elbows, junctions, flanges, valves, risers, access shafts and 24 sensors. |
-| **Left — Live signals** | Pressure, moisture, temperature and network health with sparklines; during an alert, a compact *why* panel (feature contributions → combined confidence). |
-| **Right — AI recommendation** | Monitoring → analyzing → *INTERVENE* (action, residents, hospital distance, $180K repair vs $1.62M saved) → repair steps → *FAILURE PREVENTED*. |
-| **Bottom — Playback bar** | Play / reset / skip plus the 4-stage AI pipeline (Detect → Predict → Prioritize → Plan). A small forecast card (NOW → 72 h, 36–52 h window) appears only while a failure is predicted. |
+| **Landing page** | What Pioneer does in one screen, how it works, the agents, the real map, safety, and a link into the twin. |
+| **Opening** | A map zoom from the UAE to Abu Dhabi Island to the Al Danah streets, handing over to the 3D twin on the same view (click or any key skips). |
+| **Center — 3D twin** | Real downtown Abu Dhabi: ~500 buildings at their real heights, the Corniche and the Gulf, mosques, parks, ~1,300 palms, everyday traffic on the real roads, and five utility networks laid under the real streets. |
+| **Left — Sensors** | Pressure, moisture, temperature and network health, the *why* panel during an alert, and the location card with Abu Dhabi time (GST). |
+| **Right — Agents** | Autonomy switch (Full auto / With limits / Ask me) and spend limit, the six agents, their decisions with what they compared, the crew board, the approval card when a limit needs a person, and "Ask the agents". |
+| **Bottom — Playback** | Play, pause, seek and the story steps. |
 
 ---
 
@@ -124,42 +131,37 @@ npm run typecheck  # TypeScript only
 
 | Action | How |
 | --- | --- |
-| Orbit / pan / zoom | Left-drag / right-drag / scroll (limits keep you oriented) |
-| Inspect | Hover buildings, pipes, sensors and sectors; **click** to pin a live asset card |
-| Camera presets | City · Sector · Underground · Failure · Impact (keys **1–5**), **Reset view** (**0**) |
-| X-ray | See through the city to the luminous networks (**X**) |
-| Exploded view | Separate surface / electricity / telecom / water / cooling / sewage like an engineering diagram (**E**) |
-| Layers | Emphasize one network (others dim) or hide networks (**L** toggles the panel) |
-| NOW / +48H | After a failure is predicted, simulate the city 48 h later if nothing is done: the main bursts (T+44 h), Riverside Avenue closes and ~20,200 residents are affected (**F**) |
-| Compare outcomes | After the repair: *No intervention* vs *AI-guided intervention* |
-| Scenario | Run / pause (**Space**), reset (**R**), skip to incident, click the progress bar to seek |
-| Esc | Close cards, comparison and popovers |
+| Orbit / pan / zoom | Left-drag / right-drag / scroll |
+| Inspect | Hover buildings (real names from the map), pipes, sensors and areas; click to pin a card |
+| Camera presets | Keys **1–5**, reset with **0** |
+| See underground | **X** |
+| Split the layers | **E** |
+| In 48 h | What happens if nobody acts (**F**) |
+| Compare outcomes | After the repair: doing nothing vs Pioneer |
+| Story | Play / pause (**Space**), start over (**R**), click the progress bar to seek |
 
 ---
 
-## Demo scenario — "Sector B-12 Water Network Anomaly" (~50 s)
+## Demo story (~60 s)
 
 | t | Beat |
 | --- | --- |
-| 0 s | Healthy city overview, all systems operational |
-| 2.5 s | Pressure, moisture and temperature begin to drift — amber, *individually within tolerance* |
-| 7 s | *Correlating sensor signals…* — data links arc between the B-12 sensors |
-| 10 s | *Pattern anomaly detected* — camera flies to Sector B-12, sector outline glows |
-| 12.5 s | Source localized on Riverside Avenue (reticle) |
-| 15 s | The road surface peels away tile by tile, revealing an excavation; the city turns X-ray |
-| 18 s | Camera dives into the cut and follows water main WTR-B12-04 |
-| 22.5 s | Fracture, spray and wet soil — **POSSIBLE WATER LEAK · 93 % · 36–52 h** |
-| 26 s | Failure forecast drawn on the timeline |
-| 29.5 s | Impact zone expands: affected buildings, hospital, school, road closure risk, 12,400 residents |
-| 34 s | **INTERVENE — dispatch maintenance crew within 6 h** |
-| 37.5 s | Valves V-B12-02 / V-B12-03 close, the isolated section turns red |
-| 39.5 s | Water rerouted around B-12 through the A\|B loop (cyan) |
-| 41.5 s | Crew 07 dispatched from the Utility Operations Depot along a dotted route |
-| 44.5 s | Section replaced (red → amber), leak stops |
-| 46.5 s | Pressure test, valves reopen (→ cyan), pressure recovers |
-| 48.5 s | **FAILURE PREVENTED** — risk 87 → 21, the ground closes, camera pulls back to a healthy city |
+| 0 s | Everything normal |
+| 2.5 s | Small changes in area B-12 |
+| 10 s | Something is wrong in area B-12 |
+| 15 s | Looking under Khalifa Street |
+| 22.5 s | Likely water leak, could burst in 36–52 h |
+| 29.5 s | Who would be affected: 12,400 people, Al Ahalia Hospital nearby |
+| 34 s | The plan; the agents pause here if it is over your spend limit |
+| 37.5 s | Valves close, water is sent another way |
+| 41.5 s | Crew 07 drives from the utility depot (an 18-minute drive shown fast, camera following) |
+| 50.5 s | Crew on site, one lane closed |
+| 51.5 s | Broken section replaced |
+| 54 s | Pressure test, water back on |
+| 56.5 s | Fixed before it broke: AED 5.94M saved |
 
-Everything is a pure function of the scenario clock, so pause / seek / skip are exact and repeatable.
+Everything is a pure function of the story clock, so pause, seek and replay are exact. The agents' decisions are plain
+functions too (`src/agents/brain.ts`); Qwen only explains them.
 
 ---
 
@@ -167,75 +169,58 @@ Everything is a pure function of the scenario clock, so pause / seek / skip are 
 
 ```
 src/
-  app/            App shell, layout, asset descriptions for cards
+  app/            Root (landing / twin routes), App shell, hover-card descriptions
+  agents/         The agent team, crews, decision rules, facts for "Ask the agents"
   components/
-    dashboard/    Header, SignalRail, RecommendationPanel, IntelStrip
-    overlay/      Layers, view toggles, camera presets, caption, transport, compare, +48H, tooltip, boot
-    ui/           Sparkline, status chips, asset card body
-  data/           City layout & procedural buildings, utility network graphs, sensors, incident constants, camera poses
-  simulation/
-    timeline.ts   Scenario beats, phases, captions, easing helpers
-    telemetry.ts  Deterministic telemetry model (no Math.random)
-    engine.ts     UI snapshot, scenario events, visual targets
-    runtime.ts    Per-frame mutable state shared with the 3D scene
-  store/          Zustand store (scenario status, view modes, selection, actions)
-  three/
-    CityScene.tsx            Scene composition, async shader warm-up
-    SimulationDriver.tsx     Clock → events → damped visual state → shared uniforms
-    CameraRig.tsx            Cinematic tweens, scripted dive spline, view offset between panels
-    Ground / CityBuildings / SpecialProps / StreetFurniture / Traffic
-    Cutaway.tsx              Lifting road tiles + strata trench walls
-    UndergroundNetwork.tsx   Per-layer groups (exploded view), shafts, plates, labels
-    networks/                Network graph → instanced pipes/elbows/hubs/flanges; flow shader; selected-pipe glass + particles
-    SensorNodes / Valves / LeakSimulation / Correlation / ImpactZone / RepairRoute / SectorOverlay / InspectorCard
-    materials/ shaders/      Patched MeshStandardMaterials (windows, ghost/X-ray, markings, strata, flow) and GLSL helpers
-    Effects.tsx              Bloom, vignette, ACES tone mapping
+    landing/      Landing page
+    ui/           shadcn components (navbar, rail TOC) and small twin UI pieces
+    agents/       Agents panel, approval card, Ask box
+    dashboard/    Header, sensors rail, location card
+    overlay/      Toggles, caption, transport, compare, +48 h, tooltip, boot, map intro
+    geo/          SVG map layers for the map intro and location card
+  data/
+    abudhabi.json Generated from OpenStreetMap (scripts/build-abudhabi.mjs)
+    geo.ts        Real places and street names; scene ↔ map transform
+  simulation/     Story clock, telemetry, engine, per-frame runtime, crew position
+  store/          Zustand store
+  three/          Scene: real buildings, ground, sea, palms, mosques, labels, traffic,
+                  networks, cut-away, leak, impact zone, crew route, camera rig, effects
 ```
-
-Key ideas:
-
-* **One clock, pure functions.** `computeSnapshot(t)` feeds the UI (12 Hz), `computeTargets(t, view)` feeds the scene; discrete
-  beats (camera shots, X-ray, cut-away) are edge-triggered events, re-derived on seek.
-* **No React re-renders per frame.** 3D components read damped values from `runtime.live` inside `useFrame` and write shared
-  uniforms once per frame.
-* **Real geometry, few draw calls.** Buildings, pipes, fittings, sensors, trees, lamps and cars are `InstancedMesh`es;
-  windows, markings, strata, flow pulses and X-ray ghosting are shader-driven. ~1.9 ms CPU/frame at 60 FPS on a laptop GPU.
-* **Fast, hitch-free start.** All shader variants (including hidden ones) are compiled in parallel with
-  `KHR_parallel_shader_compile` behind a render gate, using the same offscreen variants the post-processing path needs.
 
 ---
 
 ## Technologies
 
-Vite · React 19 · TypeScript · Three.js r186 · @react-three/fiber · @react-three/drei (CameraControls, Html, Line, Environment) ·
-@react-three/postprocessing · Zustand · Lucide icons · Inter & JetBrains Mono (bundled via Fontsource, works offline).
+Vite · React 19 · TypeScript · Three.js r186 · @react-three/fiber · @react-three/drei · @react-three/postprocessing ·
+Zustand · Tailwind CSS v4 and shadcn components (landing page) · Motion · Lucide · Geist, Instrument Sans and Fragment Mono
+(bundled, works offline). Optional: Qwen via Alibaba Cloud Model Studio for "Ask the agents".
 
-No paid APIs, no API keys, no external services, no external models or textures — the whole city is procedural.
+### Map data
+
+* Buildings, roads, parks, palms, coastline and place names for the twin — © [OpenStreetMap](https://www.openstreetmap.org/copyright)
+  contributors, ODbL. Rebuild with `node scripts/fetch-abudhabi.mjs abudhabi-osm.json` then
+  `node scripts/build-abudhabi.mjs abudhabi-osm.json`.
+* Country outlines — [Natural Earth](https://www.naturalearthdata.com/) 1:10m (public domain), via `world-atlas`.
+  Abu Musa, Greater Tunb and Lesser Tunb are drawn as UAE territory, as on UAE official maps.
+* Abu Dhabi coastline and Al Danah streets for the map intro — © OpenStreetMap contributors (Overpass API extract, October 2026).
+
+The attribution is shown in the app.
 
 ---
 
 ## Simulated data
 
-All of it:
+* **Telemetry** — deterministic baselines plus scripted incident changes.
+* **Assets and crews** — pipe routes, IDs, crews and their skills.
+* **Costs and forecasts** — AED 660K to fix early, AED 6.6M if it bursts, 36–52 h window, 93 % confidence.
 
-* **Telemetry** — baselines with smooth deterministic noise (sum of sines over wall time) plus scripted incident deviations.
-* **Assets** — network graphs, IDs (e.g. `WTR-B12-04`, `V-B12-02`, `P-17`), materials, diameters, install years, health scores.
-* **Population** — procedural building occupancy, calibrated so residents inside the impact radius total 12,400.
-* **Costs & forecasts** — $180K preventive (range $120K–$250K), $1.8M failure consequence, 36–52 h failure window, 93 % confidence.
-
-These figures are illustrative, labelled *Demo simulation* in the UI, and not measurements.
+These figures are illustrative and not measurements.
 
 ---
 
 ## Deployment
 
-It is a static site.
+A static build (`npm run build`, output `dist/`) works on Vercel, Cloudflare Pages or any static host. On a static host
+"Ask the agents" uses its built-in answers, since `/api/ask` runs on the Vite dev/preview server.
 
-**Vercel** — import the repository; framework preset *Vite*; build command `npm run build`; output directory `dist`.
-
-**Cloudflare Pages** — build command `npm run build`; build output directory `dist`; Node 18+.
-
-**Any static host** — run `npm run build` and upload the `dist/` folder.
-
-For the best demo on a projector: Chrome or Edge, hardware acceleration on, browser at 1920×1080 (works down to 1440×900;
-narrower screens collapse the side panels into drawers).
+For the best demo on a projector: Chrome or Edge with hardware acceleration, 1920×1080 (works down to 1440×900).

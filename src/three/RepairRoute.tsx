@@ -1,13 +1,17 @@
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { AdditiveBlending, BufferGeometry, Color, Float32BufferAttribute, Group, Mesh, ShaderMaterial, Vector2, type Intersection, type Raycaster } from 'three';
+import { AdditiveBlending, BufferGeometry, Color, Float32BufferAttribute, Group, ShaderMaterial, Vector2, type Intersection, type Raycaster } from 'three';
 import { Truck } from 'lucide-react';
 import { CREW_ROUTE, POI, TRENCH } from '../data/incident';
 import { live } from '../simulation/runtime';
 import { G } from './shaders/globals';
 import { FadeHtml } from './labels/FadeHtml';
-import { createGlowMaterial, createPropMaterial } from './materials/surfaceMaterials';
+import { createPropMaterial } from './materials/surfaceMaterials';
 import { useRaf } from '../hooks/useRaf';
+import { vehicleGeometry } from './vehicles/vehicleModels';
+import { createVehicleMaterial } from './vehicles/vehicleMaterial';
+import { crewCam } from '../simulation/crew';
+import { T } from '../simulation/timeline';
 
 const noRaycast = (_r: Raycaster, _i: Intersection[]) => {};
 const Y = 0.17;
@@ -47,7 +51,52 @@ function sampleRoute(pts: [number, number][], radius = 1.6, step = 0.25) {
   return { points: out, lengths, total: lengths[lengths.length - 1] };
 }
 
-const ROUTE = sampleRoute(CREW_ROUTE);
+/** Shift a sampled route into the right-hand lane (UAE traffic drives on the right). */
+function keepRight(route: ReturnType<typeof sampleRoute>, off: number) {
+  const { points } = route;
+  const out = points.map((p, i) => {
+    const a = points[Math.max(0, i - 1)];
+    const b = points[Math.min(points.length - 1, i + 1)];
+    const t = b.clone().sub(a).normalize();
+    return new Vector2(p.x - t.y * off, p.y + t.x * off);
+  });
+  const lengths = [0];
+  for (let i = 1; i < out.length; i++) lengths.push(lengths[i - 1] + out[i].distanceTo(out[i - 1]));
+  return { points: out, lengths, total: lengths[lengths.length - 1] };
+}
+
+const ROUTE = keepRight(sampleRoute(CREW_ROUTE), 0.3);
+
+/**
+ * Driving time along the route: the truck slows for corners and junctions, so time is
+ * spent unevenly. TIME[i] is the share of the drive used up when reaching point i.
+ */
+const TIME = (() => {
+  const { points, lengths } = ROUTE;
+  const cost = [0];
+  for (let i = 1; i < points.length; i++) {
+    const a = points[Math.max(0, i - 2)];
+    const b = points[i - 1];
+    const c = points[Math.min(points.length - 1, i + 1)];
+    const t1 = b.clone().sub(a).normalize();
+    const t2 = c.clone().sub(b).normalize();
+    const turn = Math.acos(Math.max(-1, Math.min(1, t1.dot(t2))));
+    const ds = lengths[i] - lengths[i - 1];
+    cost.push(cost[i - 1] + ds * (1 + turn * 9));
+  }
+  return cost.map((c) => c / cost[cost.length - 1]);
+})();
+
+/** Average on-screen speed of the (fast-forwarded) drive, world units per second. */
+const AVG_SPEED = ROUTE.total / (T.arrive - T.dispatch - 0.8);
+
+/** Distance along the route after `share` (0..1) of the driving time. */
+function distanceAt(share: number) {
+  let i = 1;
+  while (i < TIME.length - 1 && TIME[i] < share) i++;
+  const t = (share - TIME[i - 1]) / Math.max(1e-6, TIME[i] - TIME[i - 1]);
+  return ROUTE.lengths[i - 1] + (ROUTE.lengths[i] - ROUTE.lengths[i - 1]) * Math.min(1, Math.max(0, t));
+}
 
 function pointAt(d: number) {
   const { points, lengths } = ROUTE;
@@ -90,13 +139,12 @@ function RouteRibbon() {
       new ShaderMaterial({
         transparent: true,
         depthWrite: false,
-        blending: AdditiveBlending,
         uniforms: {
           uTime: G.uTime,
           uProgress: { value: 0 },
           uAmount: { value: 0 },
           uTotal: { value: ROUTE.total },
-          uColor: { value: new Color('#f2f6ff').multiplyScalar(1.9) },
+          uColor: { value: new Color('#f08a24') },
         },
         vertexShader: /* glsl */ `
           varying vec2 vUv;
@@ -118,8 +166,9 @@ function RouteRibbon() {
             float dotM = 1.0 - smoothstep(0.17, 0.24, length(q));
             float core = 1.0 - smoothstep(0.0, 0.08, abs(vUv.y - 0.5));
             float headGlow = exp(-(head - s) * 1.2);
-            float a = (dotM * 0.9 + core * 0.12 + headGlow * 0.8) * uAmount;
-            gl_FragColor = vec4(uColor * a, 1.0);
+            float a = clamp(dotM * 0.95 + core * 0.35 + headGlow * 0.6, 0.0, 1.0) * uAmount;
+            if (a < 0.01) discard;
+            gl_FragColor = vec4(uColor * (1.0 + headGlow * 0.6), a);
           }
         `,
       }),
@@ -132,12 +181,26 @@ function RouteRibbon() {
   return <mesh geometry={geo} material={mat} raycast={noRaycast} renderOrder={8} />;
 }
 
+/** The crew vehicle model with beacons and headlights on; brake lights while slowing. */
+function crewVehicle() {
+  const g = vehicleGeometry('crew').clone();
+  const n = g.getAttribute('position').count;
+  const state = new Float32Array(n * 4);
+  for (let i = 0; i < n; i++) state.set([1, 0, 1, 0], i * 4);
+  g.setAttribute('aState', new Float32BufferAttribute(state, 4));
+  return g;
+}
+
 function CrewTruck() {
   const ref = useRef<Group>(null);
-  const body = useMemo(() => createPropMaterial({ color: '#d9dde3', roughness: 0.45, metalness: 0.2 }), []);
-  const accent = useMemo(() => createPropMaterial({ color: '#f08a24', roughness: 0.5, metalness: 0.1, emissive: '#f08a24', emissiveIntensity: 0.25 }), []);
-  const beacon = useMemo(() => createGlowMaterial('#ffb02e', 6, 0.6), []);
-  const beaconRef = useRef<Mesh>(null);
+  const vehicle = useMemo(() => crewVehicle(), []);
+  const paint = useMemo(() => {
+    const m = createVehicleMaterial('#f08a24');
+    m.color.set('#e9ecef');
+    return m;
+  }, []);
+  const lastD = useRef(0);
+  const yaw = useRef<number | null>(null);
   const haloMat = useMemo(
     () =>
       new ShaderMaterial({
@@ -161,39 +224,44 @@ function CrewTruck() {
       }),
     [],
   );
-  useFrame(({ clock }) => {
+  useFrame((_, rawDt) => {
     const g = ref.current;
     if (!g) return;
+    const dt = Math.min(rawDt, 0.1);
     const vis = live.routeVisible;
     g.visible = vis > 0.02;
-    const { p, dir } = pointAt(live.truck * ROUTE.total);
+    const d = distanceAt(live.truck);
+    const { p, dir } = pointAt(d);
     g.position.set(p.x, 0.02, p.y);
-    g.rotation.y = Math.atan2(dir.x, dir.y);
+    // heading eases through corners instead of snapping
+    const target = Math.atan2(dir.x, dir.y);
+    if (yaw.current === null) yaw.current = target;
+    let diff = target - yaw.current;
+    diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+    yaw.current += diff * Math.min(1, dt * 9);
+    g.rotation.y = yaw.current;
     g.scale.setScalar(Math.max(0.001, vis));
-    const on = Math.sin(clock.elapsedTime * 10) > 0 ? 1 : 0.15;
-    beacon.color.setRGB(6 * on, 3.4 * on, 0.4 * on);
-    if (beaconRef.current) beaconRef.current.visible = on > 0.5;
+    // brake lights while the truck slows for a corner or the stop at the dig site
+    const speed = (d - lastD.current) / Math.max(dt, 1e-3);
+    const state = vehicle.getAttribute('aState') as Float32BufferAttribute;
+    const braking = live.truck >= 0.999 || (live.truck > 0.01 && speed < AVG_SPEED * 0.45) ? 1 : 0;
+    if (state.getY(0) !== braking) {
+      for (let i = 0; i < state.count; i++) state.setY(i, braking);
+      state.needsUpdate = true;
+    }
+    lastD.current = d;
+    crewCam.x = p.x;
+    crewCam.z = p.y;
+    crewCam.yaw = yaw.current;
+    crewCam.active = vis > 0.5 && live.truck < 0.999;
   });
   return (
     <group ref={ref}>
       <mesh rotation-x={-Math.PI / 2} position={[0, 0.2, 0]} material={haloMat}>
-        <planeGeometry args={[6, 6]} />
+        <planeGeometry args={[4.6, 4.6]} />
       </mesh>
-      <group scale={3.1}>
-        <mesh position={[0, 0.16, -0.12]} material={body} castShadow>
-          <boxGeometry args={[0.36, 0.3, 0.62]} />
-        </mesh>
-        <mesh position={[0, 0.13, 0.28]} material={accent} castShadow>
-          <boxGeometry args={[0.34, 0.24, 0.2]} />
-        </mesh>
-        <mesh position={[0, 0.06, -0.12]} material={accent}>
-          <boxGeometry args={[0.37, 0.04, 0.63]} />
-        </mesh>
-        <mesh ref={beaconRef} position={[0, 0.28, 0.26]} material={beacon}>
-          <boxGeometry args={[0.18, 0.05, 0.06]} />
-        </mesh>
-      </group>
-      <FadeHtml position={[0, 2.6, 0]} opacity={() => live.routeVisible * (1 - live.exploded)} zIndex={32} center>
+      <mesh geometry={vehicle} material={paint} scale={0.95} castShadow />
+      <FadeHtml position={[0, 1.8, 0]} opacity={() => live.routeVisible * (1 - live.exploded)} zIndex={32} center>
         <TruckLabel />
       </FadeHtml>
     </group>

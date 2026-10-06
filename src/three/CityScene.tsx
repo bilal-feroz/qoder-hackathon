@@ -5,14 +5,12 @@ import { SceneEnvironment } from './SceneEnvironment';
 import { SimulationDriver } from './SimulationDriver';
 import { CameraRig } from './CameraRig';
 import { Ground, Diorama } from './Ground';
-import { CityBuildings } from './CityBuildings';
-import { Rooftops } from './Rooftops';
-import { SpecialProps } from './SpecialProps';
-import { StreetFurniture } from './StreetFurniture';
-import { Vegetation } from './Vegetation';
-import { River } from './River';
-import { StreetLife } from './StreetLife';
-import { Traffic } from './Traffic';
+import { AbuDhabiBuildings } from './AbuDhabiBuildings';
+import { Mosques } from './Mosques';
+import { Palms } from './Palms';
+import { MapLabels } from './MapLabels';
+import { Sea } from './Sea';
+import { AbuDhabiTraffic } from './AbuDhabiTraffic';
 import { Cutaway, TrenchVolume } from './Cutaway';
 import { SurfaceMarkers } from './SensorNodes';
 import { Correlation } from './Correlation';
@@ -102,14 +100,12 @@ export function CityScene({ quality }: { quality: 'high' | 'low' }) {
       <CameraRig />
       <SurfaceGroup>
         <Ground />
-        <River />
-        <CityBuildings />
-        <Rooftops />
-        <SpecialProps />
-        <StreetFurniture />
-        <Vegetation />
-        <StreetLife />
-        <Traffic />
+        <Sea />
+        <AbuDhabiBuildings />
+        <Mosques />
+        <Palms />
+        <MapLabels />
+        <AbuDhabiTraffic />
         <Cutaway />
         <SurfaceMarkers />
         <Correlation />

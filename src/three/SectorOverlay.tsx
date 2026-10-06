@@ -24,7 +24,7 @@ function AlertLabel() {
   return (
     <FadeHtml position={[B12.x - PLINTH / 2 + 0.5, 0.4, B12.z - PLINTH / 2 + 0.5]} opacity={() => live.sectorAlert * (1 - live.exploded)} zIndex={27}>
       <div className="sector-tag is-alert" ref={boxRef} data-tone="warn">
-        <span className="sector-id mono">SECTOR B-12</span>
+        <span className="sector-id mono">Area B-12</span>
         <span className="sector-state" ref={stateRef}>
           ANOMALY
         </span>

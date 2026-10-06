@@ -33,9 +33,9 @@ export function ScenarioCaption() {
 }
 
 const STAGES = [
-  { label: 'Detect', from: T.anomaly, to: T.leak },
+  { label: 'Spot', from: T.anomaly, to: T.leak },
   { label: 'Predict', from: T.leak, to: T.impact },
-  { label: 'Prioritize', from: T.impact, to: T.plan },
+  { label: 'Impact', from: T.impact, to: T.plan },
   { label: 'Plan', from: T.plan, to: T.resolved },
 ];
 
@@ -71,10 +71,10 @@ export function ScenarioTransport() {
           <span className="run-icon">
             <Zap size={18} />
           </span>
-          <span className="run-title">Run failure scenario</span>
+          <span className="run-title">Play the demo</span>
         </button>
         <button className="link-btn skip-link" onClick={skip}>
-          Skip to incident
+          Skip to the problem
           <SkipForward size={13} />
         </button>
       </div>
@@ -95,7 +95,7 @@ export function ScenarioTransport() {
       <button className="icon-btn" onClick={reset} aria-label="Reset demo" title="Reset (R)">
         <RotateCcw size={15} />
       </button>
-      <button className="icon-btn" onClick={skip} aria-label="Skip to incident" title="Skip to incident">
+      <button className="icon-btn" onClick={skip} aria-label="Skip to the problem" title="Skip to the problem">
         <SkipForward size={15} />
       </button>
       <div className="track" ref={trackRef} onClick={onSeek} role="slider" aria-label="Scenario timeline" aria-valuemin={0} aria-valuemax={T.end} aria-valuenow={Math.round(t)} tabIndex={0}>
@@ -134,7 +134,7 @@ export function ScenarioMenu() {
     <div className="popover scenario-menu" role="dialog" aria-label="Scenario" ref={ref}>
       <div className="popover-head">
         <div>
-          <div className="popover-kicker">Guided scenario</div>
+          <div className="popover-kicker">Demo</div>
           <div className="popover-title">{INCIDENT.scenarioName}</div>
         </div>
         <button className="icon-btn sm" onClick={() => setOpen(false)} aria-label="Close">
@@ -146,7 +146,7 @@ export function ScenarioMenu() {
           <Play size={15} /> Run from start
         </button>
         <button className="btn-ghost" onClick={skip}>
-          <SkipForward size={14} /> Skip to incident
+          <SkipForward size={14} /> Skip to the problem
         </button>
         <button className="btn-ghost" onClick={viewRepairPlan}>
           <Wrench size={14} /> Jump to repair plan
@@ -176,7 +176,7 @@ export function FutureOverlay() {
     <div className={`future-frame ${future ? 'is-on' : ''}`}>
       <div className="future-banner" role="status">
         <TriangleAlert size={16} />
-        <div className="future-title">T+48 h · if no action is taken</div>
+        <div className="future-title">In 48 hours, if nobody acts</div>
         <button className="btn-ghost sm" onClick={() => setFuture(false)}>
           Back to now
         </button>

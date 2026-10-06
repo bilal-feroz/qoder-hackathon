@@ -299,7 +299,7 @@ function LeakAnnotation() {
           </div>
           <div className="leak-rows">
             <div>
-              <span>Confidence</span>
+              <span>How sure</span>
               <b className="tnum">{future ? '97%' : `${INCIDENT.confidence}%`}</b>
             </div>
             <div>

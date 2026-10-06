@@ -25,7 +25,7 @@ export function ForecastCard() {
   return (
     <div className={`forecast ${show ? 'is-on' : ''}`} aria-hidden={!show}>
       <div className="forecast-head">
-        <span>Failure in</span>
+        <span>Could break in</span>
         <b className="tnum">
           {a}–{b} h
         </b>

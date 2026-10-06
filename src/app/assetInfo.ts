@@ -1,4 +1,5 @@
-import { BUILDING_BY_ID, SECTOR_BY_ID, BUILDINGS, buildingLabel } from '../data/city';
+import { BUILDING_BY_ID, SECTOR_BY_ID, BUILDINGS, buildingLabel, sectorAt } from '../data/city';
+import { AD, AD_BUILDING_ID0, type AdKind } from '../data/abudhabi';
 import { findSegment, LAYERS, INCIDENT_SEGMENT_ID } from '../data/networks';
 import { SENSORS, SENSOR_TYPE_LABEL } from '../data/sensors';
 import { INCIDENT, IMPACT, VALVES } from '../data/incident';
@@ -30,9 +31,46 @@ export interface AssetInfo {
 
 const fmt = (v: number, d = 1) => (v >= 0 ? `+${v.toFixed(d)}` : v.toFixed(d));
 
+const KIND_LABEL: Record<AdKind, string> = {
+  mosque: 'Mosque',
+  mall: 'Shopping mall',
+  hospital: 'Hospital',
+  school: 'School',
+  fort: 'Cultural site',
+  roof: 'Canopy',
+  utility: 'Utility building',
+  hotel: 'Hotel',
+  house: 'House',
+  office: 'Offices',
+  tower: 'Tower',
+  residential: 'Apartments',
+  building: 'Building',
+};
+
+/** A real downtown building from OpenStreetMap. */
+function describePlace(id: number, snap: SimSnapshot): AssetInfo | null {
+  const b = AD.buildings[id - AD_BUILDING_ID0];
+  if (!b) return null;
+  const d = Math.hypot(b.c[0] - IMPACT.center.x, b.c[1] - IMPACT.center.z);
+  const inZone = snap.impact && !snap.resolved && d <= IMPACT.radius;
+  return {
+    kicker: KIND_LABEL[b.k],
+    title: b.n || KIND_LABEL[b.k],
+    subtitle: `Area ${sectorAt(b.c[0], b.c[1])?.id ?? '—'} · ${Math.round(d * 10)} m from the leak`,
+    tone: inZone ? 'warn' : 'ok',
+    status: inZone ? 'In affected zone' : 'Normal',
+    rows: [
+      { label: 'Height', value: `${Math.round(b.h * 10)} m`, key: true },
+      { label: 'Water service', value: inZone ? 'At risk if the main fails' : 'Normal', tone: inZone ? 'warn' : 'ok', key: true },
+      { label: 'Map', value: 'OpenStreetMap' },
+    ],
+  };
+}
+
 export function describe(info: HoverInfo, snap: SimSnapshot): AssetInfo | null {
   switch (info.kind) {
     case 'building': {
+      if (info.id >= AD_BUILDING_ID0) return describePlace(info.id, snap);
       const b = BUILDING_BY_ID.get(info.id);
       if (!b) return null;
       const d = Math.hypot(b.x - IMPACT.center.x, b.z - IMPACT.center.z);
@@ -59,7 +97,7 @@ export function describe(info: HoverInfo, snap: SimSnapshot): AssetInfo | null {
       return {
         kicker: 'SECTOR',
         title: s.id,
-        subtitle: s.kind === 'park' ? 'Riverside Park' : s.kind === 'yard' ? 'Utility yard' : s.kind === 'campus' ? 'Education campus' : 'Urban block',
+        subtitle: s.kind === 'park' ? 'Public park' : s.kind === 'yard' ? 'Utility yard' : s.kind === 'campus' ? 'Education campus' : 'Urban block',
         tone: incident ? (snap.localized ? 'alert' : 'warn') : 'ok',
         status: incident ? (snap.localized ? 'Incident' : 'Anomaly') : 'Nominal',
         rows: [
@@ -81,7 +119,7 @@ export function describe(info: HoverInfo, snap: SimSnapshot): AssetInfo | null {
         return {
           kicker: 'ASSET',
           title: seg.id,
-          subtitle: `${layer.label} main · Riverside Avenue`,
+          subtitle: `${layer.label} main · Khalifa Street`,
           tone: repaired ? 'ok' : active ? 'alert' : 'ok',
           status: repaired ? 'Repaired' : isolated ? 'Isolated' : active ? (snap.localized ? 'Leak detected' : 'Abnormal') : 'Normal',
           color: layer.color,
@@ -134,7 +172,7 @@ export function describe(info: HoverInfo, snap: SimSnapshot): AssetInfo | null {
         rows.push({ label: 'Soil moisture', value: `${(21 + dev * 0.21).toFixed(1)}% VWC`, mono: true });
         rows.push({ label: 'Deviation', value: `${fmt(dev, 0)}%`, mono: true, tone: dev > 3 ? tone : undefined });
       } else if (s.type === 'temperature') {
-        rows.push({ label: 'Ground temp.', value: `${(14 * (1 + snap.tempDev / 100)).toFixed(2)} °C`, mono: true });
+        rows.push({ label: 'Ground temp.', value: `${(31 * (1 + snap.tempDev / 100)).toFixed(2)} °C`, mono: true });
         rows.push({ label: 'Deviation', value: `${fmt(snap.tempDev)}%`, mono: true, tone: snap.tempDev > 1 ? tone : undefined });
       } else if (s.type === 'flow') {
         rows.push({ label: 'Flow', value: `${(412 * (1 + snap.flowImbalance / 100)).toFixed(0)} L/s`, mono: true });

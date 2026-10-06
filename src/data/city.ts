@@ -39,14 +39,15 @@ export const CITY_MAX_Z = 62;
 
 /** The diorama "slab" the city sits on — its cut faces expose the underground. */
 export const DIORAMA = {
-  minX: -80,
-  maxX: 80,
+  minX: -96,
+  maxX: 96,
   minZ: -68,
   maxZ: 92,
   bottom: -14,
 } as const;
 
-export const RIVER = { minZ: 68, maxZ: 86, bed: -2.4, level: -1.15 } as const;
+/** The Corniche sea: water level, sea bed, and where the coast starts (abudhabi.json). */
+export const RIVER = { minZ: 39.4, maxZ: 92, bed: -2.4, level: -1.15 } as const;
 
 export const RIVERSIDE_AVENUE_Z = 0;
 

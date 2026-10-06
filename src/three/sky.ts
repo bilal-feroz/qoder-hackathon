@@ -76,8 +76,8 @@ export function createSkyMaterial(forEnv = false) {
           col = mix(col, cc, cov * 0.88);
         }
 
-        // below the horizon: dark haze (the void beneath the diorama)
-        vec3 below = mix(vec3(0.018, 0.024, 0.036), horizon * 0.25, uEnv);
+        // below the horizon: Pioneer's pale canvas (the space around the diorama)
+        vec3 below = mix(vec3(0.62, 0.64, 0.71), horizon * 0.25, uEnv);
         col = mix(col, below, smoothstep(0.0, -0.07, y));
         return col;
       }

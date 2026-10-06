@@ -72,6 +72,7 @@ export type ShotId =
   | 'valves'
   | 'reroute'
   | 'route'
+  | 'follow'
   | 'repairView'
   | 'exploded'
   | 'outro';
@@ -104,6 +105,8 @@ export const EVENTS: { t: number; set: Partial<ScenarioControlled> }[] = [
   { t: T.repair, set: { repairOpen: true, shot: 'valves', xray: true } },
   { t: T.reroute, set: { shot: 'reroute' } },
   { t: T.dispatch, set: { shot: 'route', xray: false } },
+  { t: T.dispatch + 1.5, set: { shot: 'follow' } },
+  { t: T.arrive, set: { shot: 'approach' } },
   { t: T.replace, set: { shot: 'underground' } },
   { t: T.resolved, set: { trench: false, xray: false, focus: null, shot: 'outro' } },
 ];
@@ -206,7 +209,7 @@ export function computeTargets(t: number, v: ViewInputs): VisualTargets {
     reroute: a ? pulse(s, T.reroute, T.reroute + 0.8, T.restore + 0.8, T.restore + 2.0) : 0,
     route: a ? ramp(s, T.dispatch, T.dispatch + 2.0) : 0,
     routeVisible: a ? pulse(s, T.dispatch - 0.2, T.dispatch + 0.3, T.resolved + 1.5, T.resolved + 3) : 0,
-    truck: a ? ramp(s, T.dispatch + 0.3, T.dispatch + 2.9) : 0,
+    truck: a ? ramp(s, T.dispatch + 0.8, T.arrive) : 0,
     repairTone: a ? keys(s, [[T.replace, 0], [T.replace + 0.9, 1], [T.restore, 1], [T.restore + 1.2, 2]]) : 0,
     future,
     burst,

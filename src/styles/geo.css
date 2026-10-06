@@ -1,0 +1,547 @@
+/* Maps (data/geo.ts, components/geo): the opening zoom and the locator card.
+ * Layout and motion from the Al Danah reframe; colours are Pioneer's: pale land,
+ * ink coastlines, amber only for the incident street. */
+
+/* ================= map layers ================= */
+
+.geo-neighbour {
+  fill: #e3dfd6;
+  stroke: rgba(14, 15, 19, 0.14);
+  stroke-width: 0.6px;
+}
+
+.geo-uae {
+  fill: #efeae0;
+  stroke: rgba(14, 15, 19, 0.55);
+  stroke-width: 0.8px;
+  stroke-linejoin: round;
+}
+
+/* OpenStreetMap land continues the UAE fill seamlessly; Abu Dhabi Island is lifted */
+.geo-land {
+  fill: #efeae0;
+}
+
+.geo-island,
+.geo-coast {
+  fill: #f6f3ec;
+}
+
+.geo-land-edge,
+.geo-island-edge,
+.geo-coast-edge {
+  fill: none;
+  stroke-linejoin: round;
+}
+
+.geo-land-edge {
+  stroke: rgba(14, 15, 19, 0.35);
+  stroke-width: 0.6px;
+}
+
+.geo-island-edge,
+.geo-coast-edge {
+  stroke: rgba(14, 15, 19, 0.7);
+  stroke-width: 0.9px;
+}
+
+.geo-minor,
+.geo-major,
+.geo-named,
+.geo-hamdan {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.geo-minor {
+  stroke: rgba(14, 15, 19, 0.16);
+  stroke-width: 0.7px;
+}
+
+.geo-major {
+  stroke: rgba(14, 15, 19, 0.32);
+  stroke-width: 1.1px;
+}
+
+.geo-named {
+  stroke: rgba(14, 15, 19, 0.58);
+  stroke-width: 1.5px;
+}
+
+/* the incident street (Khalifa Street) */
+.geo-hamdan {
+  stroke: var(--amber);
+  stroke-width: 2.6px;
+  filter: drop-shadow(0 0 4px rgba(183, 121, 31, 0.45));
+}
+
+.geo-footprint {
+  fill: rgba(47, 55, 88, 0.07);
+  stroke: var(--dusk-1);
+  stroke-width: 1.3px;
+  stroke-dasharray: 6 4;
+}
+
+/* ================= opening map: UAE → Abu Dhabi Island → Al Danah ================= */
+
+.map-intro {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 45%, #e4e8ef 0%, #d3d9e3 70%);
+}
+
+/* soft edge so the data extents never show */
+.map-intro::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 72% 72% at 50% 50%, transparent 55%, var(--bg-0) 100%);
+}
+
+.mi-svg {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.mi-labels {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.mi-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  white-space: nowrap;
+  will-change: transform, opacity;
+  text-shadow:
+    0 0 3px rgba(244, 244, 247, 0.95),
+    0 0 10px rgba(244, 244, 247, 0.8);
+}
+
+.mi-en {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-1);
+}
+
+.mi-ar {
+  font-family: 'Geist Variable', sans-serif;
+  font-size: 11px;
+  color: var(--text-2);
+}
+
+.mi-country .mi-en {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--text-0);
+}
+
+.mi-country .mi-ar {
+  font-size: 15px;
+  color: var(--text-1);
+}
+
+.mi-neighbour .mi-en {
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.mi-sea .mi-en {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-style: italic;
+  color: rgba(47, 55, 88, 0.62);
+}
+
+.mi-sea .mi-ar {
+  color: rgba(47, 55, 88, 0.48);
+}
+
+.mi-city {
+  flex-direction: row;
+  gap: 6px;
+  transform-origin: 0 0;
+}
+
+.mi-city::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--text-1);
+  box-shadow: 0 0 0 2px rgba(244, 244, 247, 0.9);
+}
+
+.mi-city .mi-ar {
+  display: none;
+}
+
+.mi-city.is-capital::before {
+  width: 9px;
+  height: 9px;
+  background: var(--text-0);
+  box-shadow:
+    0 0 0 3px rgba(244, 244, 247, 0.95),
+    0 0 0 6px rgba(14, 15, 19, 0.12);
+}
+
+.mi-city.is-capital .mi-en {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-0);
+}
+
+.mi-city.is-capital .mi-ar {
+  display: inline;
+  font-size: 12px;
+}
+
+.mi-island .mi-en {
+  font-size: 11.5px;
+  color: var(--text-2);
+}
+
+.mi-island.is-main .mi-en {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.mi-site {
+  gap: 3px;
+}
+
+.mi-site::before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  margin-bottom: 7px;
+  border-radius: 50%;
+  background: var(--text-0);
+  box-shadow:
+    0 0 0 4px rgba(244, 244, 247, 0.95),
+    0 0 0 9px rgba(14, 15, 19, 0.1);
+  animation: miPulse 1.6s ease-in-out infinite;
+}
+
+.mi-site .mi-en {
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(14, 15, 19, 0.1);
+  background: rgba(244, 244, 247, 0.92);
+  color: var(--text-0);
+  font-size: 12px;
+  font-weight: 600;
+  text-shadow: none;
+}
+
+.mi-street .mi-en {
+  font-size: 11px;
+  color: var(--text-0);
+}
+
+.mi-street .mi-ar {
+  font-size: 10.5px;
+}
+
+.mi-street.is-main .mi-en {
+  font-size: 13px;
+  font-weight: 700;
+  color: #8a5a12;
+}
+
+.mi-street.is-main .mi-ar {
+  color: rgba(138, 90, 18, 0.75);
+  font-size: 12px;
+}
+
+.mi-district .mi-en {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: rgba(14, 15, 19, 0.7);
+}
+
+.mi-district .mi-ar {
+  font-size: 15px;
+}
+
+.mi-twin {
+  transform-origin: 0 0;
+}
+
+.mi-twin .mi-en {
+  padding: 3px 9px;
+  border-radius: 8px;
+  background: rgba(244, 244, 247, 0.92);
+  border: 1px solid rgba(47, 55, 88, 0.3);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--dusk-1);
+  text-shadow: none;
+}
+
+.mi-attrib {
+  position: absolute;
+  left: 32px;
+  bottom: 10px;
+  z-index: 2;
+  font-size: 10px;
+  color: var(--text-2);
+}
+
+@keyframes miPulse {
+  50% {
+    box-shadow:
+      0 0 0 4px rgba(244, 244, 247, 0.95),
+      0 0 0 14px rgba(14, 15, 19, 0.04);
+  }
+}
+
+/* ================= loader over the map ================= */
+
+.loader-card {
+  position: absolute;
+  left: 32px;
+  bottom: 32px;
+  width: 340px;
+  padding: 20px 22px 22px;
+  border-radius: var(--radius-panel);
+  border: 1px solid rgba(14, 15, 19, 0.08);
+  background: rgba(244, 244, 247, 0.9);
+  box-shadow: 0 24px 60px -30px rgba(30, 36, 60, 0.45);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition:
+    opacity 0.6s ease,
+    transform 0.8s var(--ease-out);
+}
+
+.loader.is-zooming .loader-card {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.loader-place {
+  margin: -8px 0 16px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.loader-skip {
+  position: absolute;
+  right: 28px;
+  bottom: 24px;
+  font-size: 12px;
+  color: var(--text-2);
+  animation: geoFadeIn 0.6s ease 1.2s both;
+}
+
+@keyframes geoFadeIn {
+  from {
+    opacity: 0;
+  }
+}
+
+.intro-place {
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-1);
+}
+
+.hdr-clock {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.hdr-tz {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+@media (max-width: 760px) {
+  .loader-card {
+    left: 12px;
+    right: 12px;
+    bottom: 26px;
+    width: auto;
+  }
+
+  .mi-attrib {
+    left: 12px;
+    bottom: 4px;
+  }
+
+  .loader-skip {
+    display: none;
+  }
+}
+
+/* ================= locator card (left rail) ================= */
+
+.loc {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.loc-ar {
+  font-size: 11.5px;
+  color: var(--text-2);
+}
+
+.loc-map {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-chip);
+  background: radial-gradient(ellipse at 30% 30%, #e7ebf1, #d4dae4);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.loc-city {
+  fill: var(--text-2);
+}
+
+.loc-capital {
+  fill: var(--text-0);
+}
+
+.loc-box {
+  fill: rgba(47, 55, 88, 0.1);
+  stroke: var(--dusk-1);
+  stroke-width: 0.8;
+}
+
+.loc-leader {
+  stroke: rgba(47, 55, 88, 0.4);
+  stroke-width: 0.7;
+}
+
+.loc-lens-bg {
+  fill: #dfe4ec;
+}
+
+.loc-lens-rim {
+  fill: none;
+  stroke: rgba(14, 15, 19, 0.55);
+  stroke-width: 1;
+}
+
+.loc-footprint {
+  fill: rgba(47, 55, 88, 0.22);
+  stroke: var(--dusk-1);
+  stroke-width: 0.6px;
+}
+
+.loc-site {
+  fill: var(--text-0);
+  stroke: #f4f4f7;
+  stroke-width: 0.8;
+}
+
+.loc-pulse {
+  fill: none;
+  stroke: var(--text-0);
+  stroke-width: 1;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: locPulse 2.2s var(--ease-out) infinite;
+}
+
+.loc.is-alert .loc-site {
+  fill: var(--red);
+}
+
+.loc.is-alert .loc-pulse {
+  stroke: var(--red);
+  animation-duration: 1.2s;
+}
+
+@keyframes locPulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.95;
+  }
+  100% {
+    transform: scale(3.2);
+    opacity: 0;
+  }
+}
+
+.loc-label {
+  font-size: 8px;
+  font-weight: 600;
+  fill: var(--text-2);
+}
+
+.loc-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 2px;
+}
+
+.loc-name {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-0);
+}
+
+.loc-name svg {
+  color: var(--text-0);
+  flex: none;
+}
+
+.loc.is-alert .loc-name svg {
+  color: var(--red);
+}
+
+.loc-sub {
+  font-size: 11.5px;
+  color: var(--text-2);
+  padding-left: 17px;
+}
+
+.loc-attrib {
+  font-size: 9.5px;
+  color: var(--text-2);
+  padding: 0 2px;
+}
+
+@media (max-height: 760px) {
+  .loc-map {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mi-site::before,
+  .loc-pulse,
+  .loader-skip {
+    animation: none;
+  }
+}

@@ -5,10 +5,11 @@ import { Activity, ShieldCheck } from 'lucide-react';
 import { CityScene } from '../three/CityScene';
 import { viewInsets } from '../three/CameraRig';
 import { EXPOSURE } from '../three/sceneConfig';
+import { POSES } from '../data/cameras';
 import { useTwinStore } from '../store/useTwinStore';
 import { Header } from '../components/dashboard/Header';
 import { SignalRail } from '../components/dashboard/SignalRail';
-import { RecommendationPanel } from '../components/dashboard/RecommendationPanel';
+import { AgentsPanel } from '../components/agents/AgentsPanel';
 import { LayerPanel } from '../components/overlay/LayerPanel';
 import { CameraPresets, ViewToggles } from '../components/overlay/ViewControls';
 import { FutureOverlay, ScenarioCaption, ScenarioMenu, ScenarioTransport } from '../components/overlay/ScenarioOverlay';
@@ -18,10 +19,14 @@ import { HoverTooltip } from '../components/overlay/HoverTooltip';
 import { BootSequence } from '../components/overlay/BootSequence';
 import { useShortcuts } from '../hooks/useShortcuts';
 import { useMediaQuery } from '../hooks/useMediaQuery';
+import { MAP_CREDIT } from '../data/abudhabi';
 import '../styles/layout.css';
 import '../styles/panels.css';
 import '../styles/overlays.css';
 import '../styles/world.css';
+import '../styles/geo.css';
+import '../styles/pioneer.css';
+import '../styles/agents.css';
 
 function useViewportInsets(ref: React.RefObject<HTMLDivElement | null>) {
   useEffect(() => {
@@ -64,11 +69,11 @@ export function App() {
 
   return (
     <div className={`app boot-${boot} ${compact ? 'is-compact' : ''} ${drawer ? `drawer-${drawer}` : ''} phase-${phase.toLowerCase()}`}>
-      <div className="stage" role="application" aria-label="Interactive 3D digital twin of the Riverside District: buildings, roads and five underground utility networks">
+      <div className="stage" role="application" aria-label="Interactive 3D twin of downtown Abu Dhabi: real streets and buildings with five underground utility networks">
         <Canvas
           shadows
           dpr={dpr}
-          camera={{ fov: 34, near: 0.4, far: 2400, position: [-150, 230, 270] }}
+          camera={{ fov: 34, near: 0.4, far: 2400, position: POSES.intro.pos }}
           gl={{ antialias: false, powerPreference: 'high-performance', stencil: false }}
           onCreated={({ gl }) => {
             gl.toneMappingExposure = EXPOSURE;
@@ -94,8 +99,8 @@ export function App() {
       <aside className="rail rail-l panel panel-enter" style={{ ['--enter-delay' as string]: '80ms' }} aria-label="Live signals">
         <SignalRail />
       </aside>
-      <aside className="rail rail-r panel panel-enter" style={{ ['--enter-delay' as string]: '160ms' }} aria-label="AI recommendation">
-        <RecommendationPanel />
+      <aside className="rail rail-r panel panel-enter" style={{ ['--enter-delay' as string]: '160ms' }} aria-label="Pioneer agents">
+        <AgentsPanel />
       </aside>
 
       <div className="viewport" ref={viewportRef}>
@@ -125,10 +130,14 @@ export function App() {
             <Activity size={14} /> Signals
           </button>
           <button className={`ov-chip ${drawer === 'right' ? 'is-on' : ''}`} onClick={() => setDrawer(drawer === 'right' ? null : 'right')}>
-            <ShieldCheck size={14} /> Action
+            <ShieldCheck size={14} /> Agents
           </button>
         </div>
       )}
+
+      <a className="map-credit" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">
+        {MAP_CREDIT}
+      </a>
 
       <ScenarioMenu />
       <HoverTooltip />

@@ -14,10 +14,11 @@ export interface PathShot {
   duration: number;
 }
 
-export const POSES: Record<Exclude<ShotId, 'dive'>, Pose> = {
-  intro: { pos: [-150, 230, 270], target: [0, -6, 0], duration: 0 },
-  city: { pos: [78, 82, 128], target: [0, -6, 10], duration: 2.4 },
-  outro: { pos: [78, 82, 128], target: [0, -6, 10], duration: 5.2 },
+export const POSES: Record<Exclude<ShotId, 'dive' | 'follow'>, Pose> = {
+  // straight down onto the slab, inland (−z) up: the opening map zoom ends on exactly this view
+  intro: { pos: [0, 352, 15.5], target: [0, 0, 0], duration: 0 },
+  city: { pos: [70, 96, 150], target: [4, -6, 4], duration: 2.4 },
+  outro: { pos: [70, 96, 150], target: [4, -6, 4], duration: 5.2 },
   sector: { pos: [34, 33, 47], target: [2, 0, -10], duration: 2.8 },
   approach: { pos: [26, 21, 30], target: [2, -1.5, -2.8], duration: 2.6 },
   underground: { pos: [11, 19, 21], target: [0.5, -6.0, -2.2], duration: 2.4 },
@@ -26,7 +27,7 @@ export const POSES: Record<Exclude<ShotId, 'dive'>, Pose> = {
   repairView: { pos: [38, 46, 60], target: [3, -2, -6], duration: 3.0 },
   valves: { pos: [11.0, -1.5, -0.6], target: [-3.5, -5.4, -2.4], duration: 2.6 },
   reroute: { pos: [36, 70, 44], target: [-2, -5, -17], duration: 2.4 },
-  route: { pos: [78, 76, 104], target: [32, -3, 20], duration: 2.4 },
+  route: { pos: [102, 84, 62], target: [40, -3, -28], duration: 2.4 },
   exploded: { pos: [160, 98, 208], target: [4, -24, 8], duration: 2.6 },
 };
 

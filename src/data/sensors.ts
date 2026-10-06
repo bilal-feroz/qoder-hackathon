@@ -1,5 +1,5 @@
 import { STREET_X, STREET_Z } from './city';
-import { LAYERS, type LayerId } from './networks';
+import { LAYERS, NETWORKS, type LayerId } from './networks';
 
 export type SensorType = 'pressure' | 'moisture' | 'temperature' | 'flow' | 'voltage' | 'fiber' | 'level' | 'thermal';
 
@@ -24,7 +24,7 @@ const lz = (l: LayerId, j: number) => STREET_Z[j] + LAYERS[l].offset;
 type Def = Omit<Sensor, 'index'>;
 
 const DEFS: Def[] = [
-  // ---- incident cluster (Sector B-12 / Riverside Avenue) ----
+  // ---- incident cluster (area B-12 / Khalifa Street) ----
   { id: 'P-14', type: 'pressure', layer: 'water', x: wx(2), y: W.depth, z: wz(2), cluster: true },
   { id: 'P-17', type: 'pressure', layer: 'water', x: -2.4, y: W.depth, z: wz(2), cluster: true },
   { id: 'P-22', type: 'pressure', layer: 'water', x: wx(3), y: W.depth, z: wz(2), cluster: true },
@@ -54,12 +54,40 @@ const DEFS: Def[] = [
 
 const ON_PIPE: SensorType[] = ['pressure', 'flow', 'voltage', 'fiber', 'level', 'thermal'];
 
+/** Healthy-network instruments sit on the nearest real pipe of their layer. */
+function onPipe(layer: LayerId, x: number, z: number): [number, number] {
+  let best: [number, number] = [x, z];
+  let bd = Infinity;
+  for (const n of NETWORKS) {
+    if (n.layer.id !== layer) continue;
+    for (const s of n.segments) {
+      const [ax, az] = s.a;
+      const [bx, bz] = s.b;
+      const L2 = (bx - ax) ** 2 + (bz - az) ** 2 || 1e-9;
+      const t = Math.max(0, Math.min(1, ((x - ax) * (bx - ax) + (z - az) * (bz - az)) / L2));
+      const px = ax + t * (bx - ax);
+      const pz = az + t * (bz - az);
+      const d = Math.hypot(px - x, pz - z);
+      if (d < bd) {
+        bd = d;
+        best = [px, pz];
+      }
+    }
+  }
+  return best;
+}
+
 /** Pipe-mounted instruments sit on the crown of their pipe so they stay visible. */
-export const SENSORS: Sensor[] = DEFS.map((d, index) => ({
-  ...d,
-  y: ON_PIPE.includes(d.type) ? LAYERS[d.layer].depth + LAYERS[d.layer].radius * 1.3 + 0.32 : d.y,
-  index,
-}));
+export const SENSORS: Sensor[] = DEFS.map((d, index) => {
+  const [x, z] = d.cluster ? [d.x, d.z] : onPipe(d.layer, d.x, d.z);
+  return {
+    ...d,
+    x,
+    z,
+    y: ON_PIPE.includes(d.type) ? LAYERS[d.layer].depth + LAYERS[d.layer].radius * 1.3 + 0.32 : d.y,
+    index,
+  };
+});
 export const SENSOR_BY_ID = new Map(SENSORS.map((s) => [s.id, s]));
 
 export const SENSOR_TYPE_LABEL: Record<SensorType, string> = {

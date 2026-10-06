@@ -1,6 +1,6 @@
 import { useFrame } from '@react-three/fiber';
 import { useRef } from 'react';
-import { useTwinStore } from '../store/useTwinStore';
+import { pendingGate, useTwinStore } from '../store/useTwinStore';
 import { runtime, live, DAMP, LINEAR, dampTowards, moveTowards } from '../simulation/runtime';
 import { computeSnapshot, computeTargets, EVENTS, type VisualTargets } from '../simulation/engine';
 import { T, ramp } from '../simulation/timeline';
@@ -33,12 +33,18 @@ export function SimulationDriver() {
 
     const active = st.status !== 'idle';
     if (st.status === 'running') {
-      runtime.t = Math.min(T.end, runtime.t + dt);
+      let next = Math.min(T.end, runtime.t + dt);
+      // the agents stop and wait here when the operator's limits need an answer
+      const gate = pendingGate(st.policy, st.approvals);
+      const holdHere = gate !== null && gate.t > runtime.lastT && gate.t <= next;
+      if (holdHere) next = gate.t;
+      runtime.t = next;
       for (const e of EVENTS) {
         if (e.t > runtime.lastT && e.t <= runtime.t) st.applyControlled(e.set);
       }
       runtime.lastT = runtime.t;
-      if (runtime.t >= T.end) st.finish();
+      if (holdHere) st.hold(gate);
+      else if (runtime.t >= T.end) st.finish();
     }
 
     const s = useTwinStore.getState();

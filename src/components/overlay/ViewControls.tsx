@@ -45,11 +45,11 @@ export function ViewToggles() {
       <div className="ov-bar" role="toolbar" aria-label="View modes">
         <button className={`toggle-btn ${xray ? 'is-on' : ''}`} onClick={toggleXray} aria-pressed={xray} title="See through the city (X)">
           <ScanEye size={15} />
-          <span>X-ray</span>
+          <span>See underground</span>
         </button>
         <button className={`toggle-btn ${exploded ? 'is-on' : ''}`} onClick={toggleExploded} aria-pressed={exploded} title="Separate the infrastructure layers (E)">
           <Boxes size={15} />
-          <span>Exploded</span>
+          <span>Split layers</span>
         </button>
       </div>
       <div className={`ov-bar time-seg ${canFuture ? '' : 'is-disabled'}`} role="group" aria-label="Time">
@@ -61,10 +61,10 @@ export function ViewToggles() {
           onClick={() => setFuture(true)}
           disabled={!canFuture}
           aria-pressed={future}
-          title={canFuture ? 'Simulate the predicted state if no action is taken (F)' : 'Available once a failure is predicted'}
+          title={canFuture ? 'See the city in 48 hours if nobody acts (F)' : 'Available once Pioneer predicts a problem'}
         >
           <TriangleAlert size={13} />
-          +48H
+          In 48 h
         </button>
       </div>
     </div>

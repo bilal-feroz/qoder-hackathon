@@ -11,7 +11,9 @@ export function useAnimatedNumber(target: number, speed = 8) {
   useEffect(() => {
     let last = performance.now();
     const tick = (now: number) => {
-      const dt = Math.min(0.1, (now - last) / 1000);
+      // a frame timestamp can precede `last` (throttled / background tabs): never step backwards,
+      // or the exponential grows instead of decaying
+      const dt = Math.min(0.1, Math.max(0, (now - last) / 1000));
       last = now;
       const next = tgt.current + (cur.current - tgt.current) * Math.exp(-speed * dt);
       cur.current = Math.abs(next - tgt.current) < 1e-3 ? tgt.current : next;

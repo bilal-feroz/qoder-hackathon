@@ -129,7 +129,7 @@ function Reticle() {
       <FadeHtml position={[TARGET.x + 2.8, 2.2, TARGET.z]} opacity={() => live.reticle} zIndex={28}>
         <div className="reticle-chip">
           <Crosshair size={13} strokeWidth={2.4} />
-          <span>Source localized</span>
+          <span>Found the spot</span>
           <b className="mono">±4 m</b>
         </div>
       </FadeHtml>

@@ -1,0 +1,46 @@
+/*
+ * The bits of Tailwind's preflight the landing page relies on, scoped so the 3D twin keeps its
+ * own reset. Every selector is wrapped in :where() so it has zero specificity and any utility
+ * class (text-*, mx-auto, …) still wins regardless of load order.
+ */
+:where(.landing) {
+  font-size: 15px;
+  line-height: 1.5;
+  scroll-behavior: smooth;
+}
+
+:where(.landing) :where(h1, h2, h3, h4, p, figure, dl, dd, blockquote) {
+  margin: 0;
+}
+
+:where(.landing) :where(h1, h2, h3, h4) {
+  font-weight: inherit;
+  font-size: inherit;
+}
+
+:where(.landing) :where(ul, ol) {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+:where(.landing) :where(a) {
+  color: inherit;
+  text-decoration: inherit;
+}
+
+:where(.landing) :where(img, svg, video) {
+  display: block;
+  max-width: 100%;
+}
+
+:where(.landing) :where(a, button):focus-visible {
+  outline: 2px solid var(--text-0);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(.landing) {
+    scroll-behavior: auto;
+  }
+}

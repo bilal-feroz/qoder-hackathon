@@ -1,25 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Check } from 'lucide-react';
 import { useTwinStore } from '../../store/useTwinStore';
-import { BUILDINGS } from '../../data/city';
-import { ALL_SEGMENTS } from '../../data/networks';
-import { SENSORS } from '../../data/sensors';
+import { PioneerMark } from '../ui/PioneerMark';
+import { PLACE } from '../../data/geo';
+import { MapIntro } from './MapIntro';
 
-const STEPS = [
-  { label: 'Buildings', meta: `${BUILDINGS.length} structures · 20 sectors` },
-  { label: 'Infrastructure', meta: `${ALL_SEGMENTS.length} pipe & duct segments · 5 networks` },
-  { label: 'Sensor Network', meta: `${SENSORS.length} instrumented access points` },
-  { label: 'AI Simulation', meta: 'Correlation & forecast models' },
-];
+const STEPS = [{ label: 'Building the city' }, { label: 'Laying pipes and cables' }, { label: 'Placing sensors' }, { label: 'Starting Pioneer' }];
 
-/** Short, honest loading sequence → camera intro → operational UI. */
+/**
+ * Short, honest loading sequence over a map of the UAE → zoom to Abu Dhabi Island and the
+ * Al Danah street grid → hand over to the 3D twin's top-down shot → camera intro → operational UI.
+ */
 export function BootSequence() {
   const boot = useTwinStore((s) => s.boot);
   const sceneReady = useTwinStore((s) => s.sceneReady);
   const setBoot = useTwinStore((s) => s.setBoot);
   const requestShot = useTwinStore((s) => s.requestShot);
   const [step, setStep] = useState(0);
+  const [zooming, setZooming] = useState(false);
   const [gone, setGone] = useState(false);
+  const handedOver = useRef(false);
 
   useEffect(() => {
     if (boot !== 'loading') return;
@@ -33,15 +33,31 @@ export function BootSequence() {
     }
   }, [step, sceneReady, boot]);
 
+  // everything loaded → fly from the UAE down to the street grid
   useEffect(() => {
     if (step === STEPS.length && boot === 'loading') {
-      const id = setTimeout(() => {
-        setBoot('intro');
-        requestShot('intro');
-      }, 260);
+      const id = setTimeout(() => setZooming(true), 380);
       return () => clearTimeout(id);
     }
-  }, [step, boot, setBoot, requestShot]);
+  }, [step, boot]);
+
+  // the map ends on the twin's top-down view: fade it out, then start the camera intro
+  const handOver = useCallback(() => {
+    if (handedOver.current) return;
+    handedOver.current = true;
+    setBoot('intro');
+    setTimeout(() => requestShot('intro'), 650);
+  }, [setBoot, requestShot]);
+
+  useEffect(() => {
+    if (!zooming || boot !== 'loading') return;
+    window.addEventListener('pointerdown', handOver, { once: true });
+    window.addEventListener('keydown', handOver, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', handOver);
+      window.removeEventListener('keydown', handOver);
+    };
+  }, [zooming, boot, handOver]);
 
   useEffect(() => {
     if (boot !== 'intro') return;
@@ -66,13 +82,14 @@ export function BootSequence() {
   return (
     <>
       {!gone && (
-        <div className={`loader ${boot !== 'loading' ? 'is-out' : ''}`} aria-busy={boot === 'loading'}>
+        <div className={`loader ${boot !== 'loading' ? 'is-out' : ''} ${zooming ? 'is-zooming' : ''}`} aria-busy={boot === 'loading'}>
+          <MapIntro play={zooming} onDone={handOver} />
           <div className="loader-card">
-            <svg width="44" height="44" viewBox="0 0 32 32" aria-hidden className="loader-mark">
-              <path d="M16 3.5 27 9.8v12.4L16 28.5 5 22.2V9.8z" fill="none" stroke="var(--cyan)" strokeWidth="1.3" strokeLinejoin="round" />
-              <path d="M10.5 19.8v-4.6M16 22v-9.6M21.5 19.8v-4.6" stroke="var(--text-0)" strokeWidth="1.7" strokeLinecap="round" />
-            </svg>
-            <div className="loader-title">Loading city digital twin</div>
+            <PioneerMark size={46} className="loader-mark" />
+            <div className="loader-title">Getting the city ready</div>
+            <div className="loader-place">
+              {PLACE.district} · {PLACE.city} · {PLACE.country}
+            </div>
             <ul className="loader-steps">
               {STEPS.map((s, i) => (
                 <li key={s.label} className={i < step ? 'is-done' : i === step ? 'is-active' : ''}>
@@ -85,11 +102,15 @@ export function BootSequence() {
               <i style={{ width: `${(step / STEPS.length) * 100}%` }} />
             </div>
           </div>
+          {zooming && <div className="loader-skip">Click or press any key to skip</div>}
         </div>
       )}
       <div className={`intro-title ${boot === 'intro' ? 'is-on' : ''}`} aria-hidden={boot !== 'intro'}>
-        <div className="intro-name">AI Infrastructure Guardian</div>
-        <div className="intro-tag">The City That Heals Itself.</div>
+        <div className="intro-name">Pioneer</div>
+        <div className="intro-tag">Spots trouble under the city before it breaks.</div>
+        <div className="intro-place">
+          {PLACE.district} · {PLACE.city}
+        </div>
       </div>
     </>
   );

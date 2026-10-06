@@ -3,7 +3,8 @@ import { useFrame } from '@react-three/fiber';
 import { BoxGeometry, BufferGeometry, Color, CylinderGeometry, EdgesGeometry, Float32BufferAttribute, Group, InstancedMesh, LineBasicMaterial, LineSegments, Matrix4, Quaternion, ShaderMaterial, Vector3, type Intersection, type Raycaster } from 'three';
 import { LAYERS, LAYER_ORDER, NETWORKS, networkLengthKm, type LayerId } from '../data/networks';
 import { SENSORS } from '../data/sensors';
-import { DIORAMA, RIVER, BUILDINGS } from '../data/city';
+import { DIORAMA, RIVER } from '../data/city';
+import { AD } from '../data/abudhabi';
 import { live } from '../simulation/runtime';
 import { NetworkLayer } from './networks/NetworkLayer';
 import { SensorNodes } from './SensorNodes';
@@ -156,7 +157,7 @@ function SurfaceLabel() {
         <span className="layer-label-swatch" />
         <div>
           <div className="layer-label-name">City surface</div>
-          <div className="layer-label-meta">{BUILDINGS.length} buildings</div>
+          <div className="layer-label-meta">{AD.buildings.length} buildings</div>
         </div>
       </div>
     </FadeHtml>

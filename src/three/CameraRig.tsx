@@ -4,10 +4,15 @@ import { CameraControls } from '@react-three/drei';
 import { Box3, CatmullRomCurve3, PerspectiveCamera, Spherical, Vector3 } from 'three';
 import { useTwinStore } from '../store/useTwinStore';
 import { POSES, DIVE, type Vec3 } from '../data/cameras';
+import { crewCam } from '../simulation/crew';
 
 type Tween =
   | { kind: 'pose'; fromPos: Vector3; fromTgt: Vector3; toPos: Vector3; toTgt: Vector3; t0: number; dur: number; ease: (u: number) => number }
-  | { kind: 'path'; pos: CatmullRomCurve3; tgt: CatmullRomCurve3; t0: number; dur: number };
+  | { kind: 'path'; pos: CatmullRomCurve3; tgt: CatmullRomCurve3; t0: number; dur: number }
+  | { kind: 'follow'; fromPos: Vector3; fromTgt: Vector3; pos: Vector3; tgt: Vector3; yaw: number; t0: number };
+
+/** Chase camera on the crew truck: behind, above, looking a little ahead of it. */
+const FOLLOW = { back: 3.5, up: 30, ahead: 3, blendIn: 1.6 };
 
 const easeInOut = (u: number) => (u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2);
 const easeOut = (u: number) => 1 - Math.pow(1 - u, 3);
@@ -82,6 +87,10 @@ export function CameraRig() {
     c.getPosition(tmpPos);
     c.getTarget(tmpTgt);
     const t0 = now.current;
+    if (id === 'follow') {
+      tween.current = { kind: 'follow', fromPos: tmpPos.clone(), fromTgt: tmpTgt.clone(), pos: tmpPos.clone(), tgt: tmpTgt.clone(), yaw: crewCam.yaw, t0 };
+      return;
+    }
     if (id === 'dive') {
       const pos = new CatmullRomCurve3([tmpPos.clone(), ...DIVE.path.slice(1).map(v)], false, 'centripetal', 0.5);
       const tgt = new CatmullRomCurve3([tmpTgt.clone(), ...DIVE.targets.slice(1).map(v)], false, 'centripetal', 0.5);
@@ -104,6 +113,25 @@ export function CameraRig() {
     const c = ref.current;
     const tw = tween.current;
     if (!c || !tw) return;
+    if (tw.kind === 'follow') {
+      const dt = Math.min(delta, 0.1);
+      // the camera's heading trails the truck's so corners turn into smooth sweeps
+      let dy = crewCam.yaw - tw.yaw;
+      dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+      tw.yaw += dy * (1 - Math.exp(-dt * 2.2));
+      const fx = Math.sin(tw.yaw);
+      const fz = Math.cos(tw.yaw);
+      tmpPos.set(crewCam.x - fx * FOLLOW.back, FOLLOW.up, crewCam.z - fz * FOLLOW.back);
+      tmpTgt.set(crewCam.x + fx * FOLLOW.ahead, 0.2, crewCam.z + fz * FOLLOW.ahead);
+      const k = 1 - Math.exp(-dt * 4);
+      tw.pos.lerp(tmpPos, k);
+      tw.tgt.lerp(tmpTgt, k);
+      const e = easeInOut(Math.min(1, (now.current - tw.t0) / FOLLOW.blendIn));
+      tmpPos.copy(tw.fromPos).lerp(tw.pos, e);
+      tmpTgt.copy(tw.fromTgt).lerp(tw.tgt, e);
+      c.setLookAt(tmpPos.x, tmpPos.y, tmpPos.z, tmpTgt.x, tmpTgt.y, tmpTgt.z, false);
+      return;
+    }
     const u = Math.min(1, Math.max(0, (now.current - tw.t0) / tw.dur));
     if (tw.kind === 'path') {
       const e = easeInOut(u);

@@ -5,6 +5,7 @@ import { StatusChip, type ChipTone } from '../ui/StatusChip';
 import { PROJECTED_48H } from '../../simulation/telemetry';
 import { EXPLAIN_FEATURES, INCIDENT } from '../../data/incident';
 import { useAnimatedNumber } from '../../hooks/useAnimatedNumber';
+import { LocatorCard } from './LocatorCard';
 
 const sign = (v: number, d = 1) => `${v > 0.049 ? '+' : v < -0.049 ? '−' : '±'}${Math.abs(v).toFixed(d)}`;
 
@@ -99,7 +100,7 @@ export function SignalRail() {
   return (
     <div className="rail-inner">
       <header className="rail-head">
-        <span className="rail-title">Live signals</span>
+        <span className="rail-title">Sensors</span>
         <span className="live-dot small" aria-hidden />
       </header>
       <div className="sig-grid">
@@ -108,7 +109,7 @@ export function SignalRail() {
           label="Pressure"
           value={active ? `${sign(tel.pressureDev)}%` : '100%'}
           tone={pTone}
-          chip={pTone === 'ok' ? 'OK' : 'Drift'}
+          chip={pTone === 'ok' ? 'Normal' : 'Changing'}
           history={history.pressure}
           domain={[-3, 0.5]}
           projected={future}
@@ -116,9 +117,9 @@ export function SignalRail() {
         <SignalCard
           icon={<Droplets size={14} />}
           label="Moisture"
-          value={active && tel.moistureDev > 0.6 ? `+${tel.moistureDev.toFixed(0)}%` : 'OK'}
+          value={active && tel.moistureDev > 0.6 ? `+${tel.moistureDev.toFixed(0)}%` : 'Normal'}
           tone={mTone}
-          chip={mTone === 'ok' ? 'OK' : mTone === 'info' ? 'Drying' : 'High'}
+          chip={mTone === 'ok' ? 'Normal' : mTone === 'info' ? 'Drying' : 'High'}
           history={history.moisture}
           domain={[0, 20]}
           projected={future}
@@ -126,9 +127,9 @@ export function SignalRail() {
         <SignalCard
           icon={<Thermometer size={14} />}
           label="Temperature"
-          value={active && tel.tempDev > 0.3 ? `+${tel.tempDev.toFixed(0)}%` : 'OK'}
+          value={active && tel.tempDev > 0.3 ? `+${tel.tempDev.toFixed(0)}%` : 'Normal'}
           tone={tTone}
-          chip={tTone === 'warn' ? 'High' : 'OK'}
+          chip={tTone === 'warn' ? 'High' : 'Normal'}
           history={history.temp}
           domain={[0, 4.5]}
           projected={future}
@@ -138,13 +139,14 @@ export function SignalRail() {
           label="Network"
           value={`${tel.networkHealth.toFixed(1)}%`}
           tone={nTone}
-          chip={nTone === 'ok' ? 'OK' : 'Low'}
+          chip={nTone === 'ok' ? 'Normal' : 'Low'}
           history={history.health}
           domain={[96.5, 99]}
           projected={future}
         />
       </div>
       <WhyAlert />
+      <LocatorCard />
     </div>
   );
 }

@@ -20,10 +20,12 @@ export const T = {
   repair: 37.5,
   reroute: 39.5,
   dispatch: 41.5,
-  replace: 44.5,
-  restore: 46.5,
-  resolved: 48.5,
-  end: 54,
+  /** the crew's 18-minute drive is shown fast between dispatch and arrive */
+  arrive: 50.5,
+  replace: 51.5,
+  restore: 54,
+  resolved: 56.5,
+  end: 62,
 } as const;
 
 export type Phase =
@@ -72,23 +74,24 @@ export interface Caption {
 }
 
 const CAPTIONS: (Caption & { t: number })[] = [
-  { t: 0, key: 'ok', title: 'All systems operational', detail: '216 sensors streaming', tone: 'ok' },
-  { t: T.anomaly, key: 'drift', title: 'Minor sensor deviations', detail: 'Sector B-12 · individually within tolerance', tone: 'info' },
-  { t: T.correlate, key: 'correlate', title: 'Correlating sensor signals…', detail: '6 sensors · pressure, moisture, temperature', tone: 'warn' },
-  { t: T.pattern, key: 'pattern', title: 'Pattern anomaly detected', detail: 'Sector B-12 · combined signature', tone: 'warn' },
-  { t: T.localize, key: 'localize', title: 'Localizing source', detail: 'Riverside Avenue · ±4 m', tone: 'warn' },
-  { t: T.open, key: 'open', title: 'Opening subsurface view', detail: 'Cross-section · Riverside Avenue', tone: 'info' },
-  { t: T.dive, key: 'follow', title: 'Following water main WTR-B12-04', detail: 'Ductile iron · 600 mm · depth 2.1 m', tone: 'warn' },
-  { t: T.leak, key: 'leak', title: 'Possible underground water leak', detail: '93% confidence · failure in 36–52 h', tone: 'alert' },
-  { t: T.predict, key: 'predict', title: 'Forecasting failure window', detail: 'Degradation model · 72 h horizon', tone: 'alert' },
-  { t: T.impact, key: 'impact', title: 'Estimating public impact', detail: '12,400 residents · hospital 320 m', tone: 'alert' },
-  { t: T.plan, key: 'plan', title: 'Recommended: dispatch crew within 6 h', detail: 'Preventive repair · ~$180K', tone: 'warn' },
-  { t: T.repair, key: 'step1', title: 'Step 1 · Isolate upstream valve', detail: 'V-B12-02 and V-B12-03 closing', tone: 'info' },
-  { t: T.reroute, key: 'step2', title: 'Step 2 · Reroute water flow', detail: 'B-12 supplied via the A|B loop', tone: 'info' },
-  { t: T.dispatch, key: 'step3', title: 'Step 3 · Dispatch repair crew', detail: 'Crew 07 · ETA 18 min', tone: 'info' },
-  { t: T.replace, key: 'step4', title: 'Step 4 · Replace damaged pipe section', detail: 'WTR-B12-04 · 3.2 m section', tone: 'info' },
-  { t: T.restore, key: 'step5', title: 'Step 5 · Pressure test and restore', detail: 'Target 3.92 bar', tone: 'info' },
-  { t: T.resolved, key: 'resolved', title: 'Failure prevented', detail: '12,400 residents protected · $1.62M avoided', tone: 'success' },
+  { t: 0, key: 'ok', title: 'Everything is normal', detail: '216 sensors reporting', tone: 'ok' },
+  { t: T.anomaly, key: 'drift', title: 'Small changes in area B-12', detail: 'Each one looks harmless on its own', tone: 'info' },
+  { t: T.correlate, key: 'correlate', title: 'Comparing nearby sensors…', detail: 'Pressure, wet ground and heat together', tone: 'warn' },
+  { t: T.pattern, key: 'pattern', title: 'Something is wrong in area B-12', detail: 'The changes point to one cause', tone: 'warn' },
+  { t: T.localize, key: 'localize', title: 'Finding the exact spot', detail: 'Under Khalifa Street', tone: 'warn' },
+  { t: T.open, key: 'open', title: 'Looking under the road', detail: 'Khalifa Street', tone: 'info' },
+  { t: T.dive, key: 'follow', title: 'Following the main water pipe', detail: '2 m below the street', tone: 'warn' },
+  { t: T.leak, key: 'leak', title: 'Likely water leak underground', detail: 'Could burst in 36–52 hours', tone: 'alert' },
+  { t: T.predict, key: 'predict', title: 'Working out when it could break', detail: 'Looking 3 days ahead', tone: 'alert' },
+  { t: T.impact, key: 'impact', title: 'Who would be affected', detail: '12,400 people · a hospital nearby', tone: 'alert' },
+  { t: T.plan, key: 'plan', title: 'Send a repair crew within 6 hours', detail: 'Fixing it now costs about AED 660K', tone: 'warn' },
+  { t: T.repair, key: 'step1', title: 'Step 1 · Close the valves', detail: 'Stop water to the damaged part', tone: 'info' },
+  { t: T.reroute, key: 'step2', title: 'Step 2 · Send water another way', detail: 'Homes keep their water', tone: 'info' },
+  { t: T.dispatch, key: 'step3', title: 'Step 3 · Crew 07 is driving over', detail: 'An 18-minute drive through downtown, shown fast', tone: 'info' },
+  { t: T.arrive, key: 'arrive', title: 'Crew 07 is on site', detail: 'One lane of Khalifa Street closed, ambulances still get through', tone: 'info' },
+  { t: T.replace, key: 'step4', title: 'Step 4 · Replace the broken pipe', detail: 'A 3 m section', tone: 'info' },
+  { t: T.restore, key: 'step5', title: 'Step 5 · Test and turn water back on', detail: 'Checking the pressure is normal', tone: 'info' },
+  { t: T.resolved, key: 'resolved', title: 'Fixed before it broke', detail: '12,400 people kept their water · AED 5.94M saved', tone: 'success' },
 ];
 
 export function captionAt(t: number, active: boolean): Caption {
@@ -100,17 +103,23 @@ export function captionAt(t: number, active: boolean): Caption {
 
 /** Markers shown on the scenario progress bar. */
 export const TIMELINE_MARKERS: { t: number; label: string }[] = [
-  { t: T.anomaly, label: 'Anomaly' },
-  { t: T.pattern, label: 'Detect' },
+  { t: T.anomaly, label: 'Change' },
+  { t: T.pattern, label: 'Spot' },
   { t: T.leak, label: 'Leak' },
   { t: T.predict, label: 'Predict' },
   { t: T.impact, label: 'Impact' },
   { t: T.plan, label: 'Plan' },
   { t: T.repair, label: 'Repair' },
-  { t: T.resolved, label: 'Resolved' },
+  { t: T.dispatch, label: 'Crew' },
+  { t: T.resolved, label: 'Fixed' },
 ];
 
 /* ---------------- helpers ---------------- */
+
+/** How much faster than real life the city moves: 6× while the crew's drive is fast-forwarded. */
+export function fastForwardAt(t: number, active: boolean) {
+  return active ? 1 + 5 * pulse(t, T.dispatch + 0.4, T.dispatch + 1.6, T.arrive - 1.0, T.arrive) : 1;
+}
 
 export const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 export const smooth = (v: number) => {

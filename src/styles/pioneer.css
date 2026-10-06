@@ -1,0 +1,224 @@
+/* Pioneer layer — loaded last. Turns the techy all-caps labels into calm sentence
+ * case, uses Pioneer's type and panel shape, and keeps everything readable. */
+
+/* type: sentence case instead of spaced-out capitals */
+.rail-title,
+.chip,
+.hdr-tagline,
+.btn-primary,
+.tag-demo,
+.risk-row > span:first-child,
+.ov-title,
+.time-btn,
+.run-title,
+.popover-kicker,
+.future-title,
+.compare-head,
+.compare-col-title,
+.loader-title,
+.forecast-head,
+.leak-rows span,
+.asset-kicker,
+.road-chip b {
+  text-transform: none;
+  letter-spacing: -0.005em;
+}
+
+.rail-title,
+.ov-title,
+.compare-head,
+.forecast-head,
+.popover-kicker,
+.asset-kicker {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-1);
+}
+
+.chip,
+.tag-demo,
+.leak-rows span,
+.road-chip b,
+.risk-row > span:first-child {
+  font-size: 11.5px;
+  font-weight: 500;
+}
+
+.btn-primary,
+.time-btn {
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+/* display face for names and big moments */
+.hdr-title,
+.intro-name,
+.loader-title,
+.run-title,
+.future-title {
+  font-family: var(--font-display);
+}
+
+.hdr-title {
+  font-size: 19px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.hdr-tagline {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-2);
+}
+
+.hdr-live {
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+}
+
+.loader-title {
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.intro-name {
+  font-size: clamp(44px, 6vw, 84px);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  text-transform: none;
+  line-height: 1;
+}
+
+.intro-tag {
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--text-1);
+}
+
+.run-title {
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.mono,
+.tnum {
+  font-family: var(--font-mono);
+}
+
+/* badges and chips: calm weight, no wide tracking */
+.rec-badge,
+.rec-badge.big,
+.rec-priority b,
+.chip-state,
+.crew-chip b,
+.sector-state,
+[class*='-chip'] b {
+  letter-spacing: -0.005em;
+  font-weight: 600;
+}
+
+.rec-badge {
+  font-size: 15px;
+}
+
+/* panels: Bakers-style pale glass, generous corners, hairline + inner highlight */
+.panel,
+.popover {
+  border-radius: var(--radius-panel);
+  border: 1px solid rgba(14, 15, 19, 0.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    0 18px 50px -24px rgba(30, 36, 60, 0.35);
+  backdrop-filter: blur(18px) saturate(1.1);
+  -webkit-backdrop-filter: blur(18px) saturate(1.1);
+}
+
+.hdr {
+  background: linear-gradient(180deg, rgba(236, 238, 242, 0.97), rgba(236, 238, 242, 0.9) 72%, rgba(236, 238, 242, 0));
+}
+
+.hdr-brand .pioneer-mark {
+  color: var(--text-0);
+}
+
+/* the loader sits on the page colour, not a black void */
+.loader {
+  background: radial-gradient(120% 90% at 50% 40%, var(--bg-1), var(--bg-0));
+}
+
+.loader-mark {
+  color: var(--text-0);
+  filter: none;
+}
+
+button:focus-visible,
+[role='button']:focus-visible,
+input:focus-visible {
+  outline-color: var(--text-0);
+}
+
+::selection {
+  background: #cfd5ea;
+  color: var(--text-0);
+}
+
+/* real map labels (OpenStreetMap names) */
+.map-street {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: #2b2d33;
+  white-space: nowrap;
+  text-shadow:
+    0 0 3px rgba(244, 244, 247, 0.95),
+    0 0 8px rgba(244, 244, 247, 0.8);
+}
+
+.map-place {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 99px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-0);
+  white-space: nowrap;
+  background: rgba(244, 244, 247, 0.88);
+  border: 1px solid rgba(14, 15, 19, 0.08);
+  box-shadow: 0 6px 16px -10px rgba(30, 36, 60, 0.45);
+}
+
+.map-sea {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-style: italic;
+  letter-spacing: 0.02em;
+  color: rgba(244, 244, 247, 0.92);
+  white-space: nowrap;
+  text-shadow: 0 1px 8px rgba(14, 30, 40, 0.5);
+}
+
+.map-credit {
+  position: absolute;
+  right: calc(var(--rail-r) + var(--gap) * 2);
+  bottom: 6px;
+  z-index: 26;
+  font-size: 10.5px;
+  color: var(--text-2);
+  text-decoration: none;
+}
+
+.map-credit:hover {
+  color: var(--text-0);
+  text-decoration: underline;
+}
+
+/* the brand doubles as the link back to the landing page */
+a.hdr-brand {
+  color: inherit;
+  text-decoration: none;
+}

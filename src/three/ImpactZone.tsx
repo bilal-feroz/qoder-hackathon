@@ -148,14 +148,14 @@ function PoiBadges() {
         <div className="zone-label">
           <Users size={14} strokeWidth={2.2} />
           <span className="tnum">{(future ? INCIDENT.futurePopulation : INCIDENT.population).toLocaleString('en-US')}</span>
-          <span className="zone-label-sub">residents</span>
+          <span className="zone-label-sub">people</span>
         </div>
       </FadeHtml>
     </group>
   );
 }
 
-/** Riverside Avenue closure-risk overlay (amber → red when projected / burst). */
+/** Khalifa Street closure-risk overlay (amber → red when projected / burst). */
 function RoadAlert() {
   const mat = useMemo(
     () =>
@@ -222,7 +222,7 @@ function RoadAlert() {
       <FadeHtml position={[-24, 0.6, 2.5]} opacity={() => live.road} zIndex={23}>
         <div className={`road-chip ${future ? 'is-closed' : ''}`}>
           <Construction size={13} strokeWidth={2.2} />
-          <span>Riverside Ave</span>
+          <span>Khalifa St</span>
           <b>{future ? 'CLOSED' : 'at risk'}</b>
         </div>
       </FadeHtml>

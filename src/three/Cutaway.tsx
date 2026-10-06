@@ -6,7 +6,7 @@ import { live } from '../simulation/runtime';
 import { G } from './shaders/globals';
 import { GLSL_COMMON, GLSL_STRATA } from './shaders/glsl';
 import { patchMaterial, WORLDPOS_FRAG_HEAD, WORLDPOS_VERT_END, WORLDPOS_VERT_HEAD } from './shaders/patch';
-import { ROAD_GLSL } from './materials/surfaceMaterials';
+import { GROUND_MAP_UNIFORMS, ROAD_GLSL } from './materials/surfaceMaterials';
 
 const noRaycast = (_r: Raycaster, _i: Intersection[]) => {};
 const TILE_T = 0.32;
@@ -58,7 +58,7 @@ function TrenchTiles() {
     const m = new MeshStandardMaterial({ color: '#ffffff', roughness: 0.9, metalness: 0, transparent: true, envMapIntensity: 0.4 });
     return patchMaterial(m, {
       key: 'trench-tiles',
-      uniforms: { uTrench: G.uTrench, uXray: G.uXray, uTime: G.uTime, uGhostColor: G.uGhostColor },
+      uniforms: { ...GROUND_MAP_UNIFORMS, uTrench: G.uTrench, uXray: G.uXray, uTime: G.uTime, uGhostColor: G.uGhostColor },
       vertexHead: /* glsl */ `
         uniform float uTrench;
         attribute vec3 aCenter;

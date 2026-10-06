@@ -1,8 +1,10 @@
 import { createRoot } from 'react-dom/client';
-import '@fontsource-variable/inter';
-import '@fontsource-variable/jetbrains-mono';
+import '@fontsource-variable/geist';
+import '@fontsource-variable/instrument-sans';
+import '@fontsource/fragment-mono';
+import './styles/tailwind.css';
 import './styles/tokens.css';
 import './styles/global.css';
-import { App } from './app/App';
+import { Root } from './app/Root';
 
-createRoot(document.getElementById('root')!).render(<App />);
+createRoot(document.getElementById('root')!).render(<Root />);

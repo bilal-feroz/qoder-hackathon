@@ -4,6 +4,7 @@ import { telemetryAt, HISTORY_LENGTH, HISTORY_STEP } from '../simulation/telemet
 import { runtime } from '../simulation/runtime';
 import { T } from '../simulation/timeline';
 import type { LayerId } from '../data/networks';
+import { DEFAULT_POLICY, gateFor, type Autonomy, type Gate, type Policy, type Verdict } from '../agents/brain';
 
 export type PresetId = 'city' | 'sector' | 'underground' | 'failure' | 'impact';
 export type Status = 'idle' | 'running' | 'paused' | 'finished';
@@ -58,6 +59,16 @@ interface TwinState {
   selection: Selection | null;
   hoverSector: string | null;
 
+  /** How much the agents may do alone, and the operator's answers this run. */
+  policy: Policy;
+  approvals: Partial<Record<Gate['id'], Verdict>>;
+  /** Set while the clock is held for a person's answer. */
+  awaiting: Gate | null;
+  setAutonomy: (a: Autonomy) => void;
+  setSpendLimit: (v: number) => void;
+  hold: (g: Gate) => void;
+  decide: (v: Verdict) => void;
+
   setBoot: (b: TwinState['boot']) => void;
   setSceneReady: () => void;
   setSnap: (s: SimSnapshot) => void;
@@ -109,6 +120,12 @@ function buildHistory(t: number, wall: number, active: boolean): History {
 
 const isActive = (s: Status) => s !== 'idle';
 
+/** The gate the clock still has to stop at, if the current limits need one and nobody has answered. */
+export function pendingGate(policy: Policy, approvals: TwinState['approvals']): Gate | null {
+  const g = gateFor(policy);
+  return g && !approvals[g.id] ? g : null;
+}
+
 export const useTwinStore = create<TwinState>()((set, get) => ({
   boot: 'loading',
   sceneReady: false,
@@ -135,6 +152,27 @@ export const useTwinStore = create<TwinState>()((set, get) => ({
   hover: null,
   selection: null,
   hoverSector: null,
+
+  policy: DEFAULT_POLICY,
+  approvals: {},
+  awaiting: null,
+  setAutonomy: (autonomy) => {
+    set((s) => ({ policy: { ...s.policy, autonomy } }));
+    // if the new limits no longer need an answer, the agents carry on by themselves
+    const s = get();
+    if (s.awaiting && !gateFor(s.policy)) set({ awaiting: null, status: 'running' });
+  },
+  setSpendLimit: (spendLimit) => {
+    set((s) => ({ policy: { ...s.policy, spendLimit } }));
+    const s = get();
+    if (s.awaiting && !gateFor(s.policy)) set({ awaiting: null, status: 'running' });
+  },
+  hold: (awaiting) => set({ awaiting, status: 'paused' }),
+  decide: (verdict) => {
+    const { awaiting, approvals } = get();
+    if (!awaiting) return;
+    set({ approvals: { ...approvals, [awaiting.id]: verdict }, awaiting: null, status: 'running' });
+  },
 
   setBoot: (boot) => set({ boot }),
   setSceneReady: () => {
@@ -173,6 +211,8 @@ export const useTwinStore = create<TwinState>()((set, get) => ({
       scenarioMenu: false,
       visible: { ...ALL_VISIBLE },
       activePreset: 'city',
+      approvals: {},
+      awaiting: null,
     });
     get().regenerateHistory();
     set({ snap: computeSnapshot(0, runtime.wall, true) });
@@ -181,6 +221,7 @@ export const useTwinStore = create<TwinState>()((set, get) => ({
     if (get().status === 'running') set({ status: 'paused' });
   },
   resume: () => {
+    if (get().awaiting) return;
     const s = get().status;
     if (s === 'paused') set({ status: 'running', future: false, compare: null });
     if (s === 'finished') get().run();
@@ -205,6 +246,8 @@ export const useTwinStore = create<TwinState>()((set, get) => ({
       visible: { ...ALL_VISIBLE },
       scenarioMenu: false,
       activePreset: 'city',
+      approvals: {},
+      awaiting: null,
     });
     get().requestShot('city');
     get().regenerateHistory();
@@ -212,12 +255,16 @@ export const useTwinStore = create<TwinState>()((set, get) => ({
   },
   finish: () => set({ status: 'finished' }),
   seek: (t) => {
-    const clamped = Math.max(0, Math.min(T.end, t));
+    // seeking can't skip past a decision that is still waiting for a person
+    const gate = pendingGate(get().policy, get().approvals);
+    const held = gate !== null && t >= gate.t;
+    const clamped = held ? gate.t : Math.max(0, Math.min(T.end, t));
     runtime.t = clamped;
     runtime.lastT = clamped;
     const c = controlledAt(clamped);
     set({
-      status: clamped >= T.end ? 'finished' : 'running',
+      status: held ? 'paused' : clamped >= T.end ? 'finished' : 'running',
+      awaiting: held ? gate : null,
       xray: c.xray,
       trench: c.trench,
       focus: c.focus,
@@ -229,7 +276,7 @@ export const useTwinStore = create<TwinState>()((set, get) => ({
       scenarioMenu: false,
       visible: { ...ALL_VISIBLE },
     });
-    if (c.shot) get().requestShot(c.shot === 'dive' ? 'failure' : c.shot === 'outro' ? 'city' : c.shot);
+    if (c.shot) get().requestShot(c.shot === 'dive' ? 'failure' : c.shot === 'outro' ? 'city' : c.shot === 'follow' && clamped >= T.arrive ? 'approach' : c.shot);
     get().regenerateHistory();
     set({ snap: computeSnapshot(clamped, runtime.wall, true) });
   },
@@ -247,6 +294,7 @@ export const useTwinStore = create<TwinState>()((set, get) => ({
 
   requestShot: (id) => {
     const preset: PresetId | null = id === 'city' || id === 'sector' || id === 'underground' || id === 'failure' || id === 'impact' ? id : id === 'outro' || id === 'intro' ? 'city' : id === 'dive' ? 'failure' : null;
+    // 'follow' (chase camera on the crew truck) has no preset button
     set((s) => ({ shot: { id, nonce: s.shot.nonce + 1 }, activePreset: preset }));
   },
   setPreset: (id) => {
