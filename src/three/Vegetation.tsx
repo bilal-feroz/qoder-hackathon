@@ -1,5 +1,5 @@
 import { useLayoutEffect, useMemo, useRef } from 'react';
-import { BufferGeometry, Color, ConeGeometry, CylinderGeometry, Float32BufferAttribute, IcosahedronGeometry, InstancedMesh, Matrix4, MeshStandardMaterial, Quaternion, Vector3, type Intersection, type Raycaster } from 'three';
+import { BoxGeometry, BufferGeometry, Color, CylinderGeometry, Float32BufferAttribute, IcosahedronGeometry, InstancedMesh, Matrix4, MeshStandardMaterial, Quaternion, Vector3, type Intersection, type Raycaster } from 'three';
 import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { SECTORS, SECTOR_BY_ID, PLINTH_H } from '../data/city';
 import { mulberry32, type Rng } from '../data/rng';
@@ -106,28 +106,50 @@ function trunk(h: number, r0: number, r1: number, branches: number, rng: Rng) {
   return finish(out, 1, 0, h * 2.2, null, 1);
 }
 
+/** Broad, flat-topped shade tree (neem / ghaf). */
 function deciduousGeo(seed: number) {
   const rng = mulberry32(seed);
   const t = trunk(0.62, 0.055, 0.035, 2, rng);
-  const c = lobedCrown(rng, 1.08, 0.56, 5);
+  const c = lobedCrown(rng, 1.02, 0.6, 6, 0.68);
   return mergeGeometries([flat(t), flat(c)], false)!;
 }
 
-function conferGeo(seed: number) {
+/** Date palm: a slightly leaning ringed trunk under a crown of arching, drooping fronds. */
+function palmGeo(seed: number) {
   const rng = mulberry32(seed);
-  const t = trunk(0.42, 0.045, 0.03, 0, rng);
-  const tiers: BufferGeometry[] = [];
-  for (let k = 0; k < 4; k++) {
-    const r = 0.5 - k * 0.1 + rng() * 0.04;
-    const h = 0.62 - k * 0.07;
-    const g = new ConeGeometry(r, h, 9, 1, false);
-    g.deleteAttribute('uv');
-    g.rotateY(rng() * Math.PI);
-    g.translate((rng() - 0.5) * 0.03, 0.55 + k * 0.33 + h / 2, (rng() - 0.5) * 0.03);
-    tiers.push(flat(g));
+  const H = 1.28;
+  const lean = (rng() - 0.5) * 0.08;
+  const trunkG = new CylinderGeometry(0.036, 0.052, H, 7, 6).translate(0, H / 2, 0);
+  const tp = trunkG.getAttribute('position');
+  for (let i = 0; i < tp.count; i++) {
+    const y = tp.getY(i);
+    const ring = 1 + 0.12 * Math.max(0, Math.sin(y * 70)); // leaf-base rings
+    tp.setXYZ(i, tp.getX(i) * ring + lean * (y / H) ** 2, y, tp.getZ(i) * ring);
   }
-  const crown = finish(mergeGeometries(tiers, false)!, 0, 0.3, 2.0, new Vector3(0, 1.05, 0), 0.75);
-  return mergeGeometries([flat(t), crown], false)!;
+  trunkG.computeVertexNormals();
+  const top = new Vector3(lean, H, 0);
+  const fronds: BufferGeometry[] = [];
+  const n = 13;
+  for (let k = 0; k < n; k++) {
+    const len = 0.5 + rng() * 0.14;
+    const g = new BoxGeometry(len, 0.012, 0.15, 6, 1, 1).translate(len / 2, 0, 0);
+    const p = g.getAttribute('position');
+    const lift = 0.55 - (k % 3) * 0.32; // three whorls: rising, level, hanging
+    for (let i = 0; i < p.count; i++) {
+      const t = p.getX(i) / len;
+      p.setXYZ(i, p.getX(i), p.getY(i) + Math.sin(lift) * t * len - t * t * len * 0.75, p.getZ(i) * (1 - t * 0.8));
+    }
+    g.deleteAttribute('uv');
+    g.rotateY((k / n) * Math.PI * 2 + rng() * 0.3);
+    g.translate(top.x, top.y, top.z);
+    fronds.push(flat(g));
+  }
+  const heart = new IcosahedronGeometry(0.075, 0).translate(top.x, top.y - 0.04, top.z);
+  heart.deleteAttribute('uv');
+  fronds.push(flat(heart));
+  const crown = finish(mergeGeometries(fronds, false)!, 0, H - 0.3, H + 0.4, top, 0.6);
+  const t = finish(flat(trunkG), 1, 0, H * 1.6, null, 1);
+  return mergeGeometries([t, crown], false)!;
 }
 
 function columnarGeo(seed: number) {
@@ -212,7 +234,7 @@ function createFoliageMaterial() {
 /* Placement                                                           */
 /* ------------------------------------------------------------------ */
 
-type Kind = 0 | 1 | 2 | 3; // deciduous, conifer, columnar, bush
+type Kind = 0 | 1 | 2 | 3; // shade tree (neem / ghaf), date palm, clipped conocarpus, bush
 interface Plant {
   kind: Kind;
   x: number;
@@ -227,12 +249,12 @@ const KEEP_CLEAR = [
   { minX: 50.8, maxX: 54.2, minZ: 31, maxZ: 36 }, // depot gate
 ];
 
+/** Irrigated desert greens: grey-green palm fronds, olive shade trees, dark clipped hedges. */
 function leafColor(rng: Rng, kind: Kind) {
   const c = new Color();
-  if (kind === 1) return c.setHSL(0.36 + rng() * 0.04, 0.32 + rng() * 0.1, 0.12 + rng() * 0.05);
-  const autumn = rng() < 0.12;
-  if (autumn) return c.setHSL(0.06 + rng() * 0.07, 0.55 + rng() * 0.15, 0.24 + rng() * 0.08);
-  return c.setHSL(0.24 + rng() * 0.09, 0.38 + rng() * 0.16, 0.17 + rng() * 0.08);
+  if (kind === 1) return c.setHSL(0.2 + rng() * 0.04, 0.28 + rng() * 0.1, 0.19 + rng() * 0.05);
+  if (kind === 2) return c.setHSL(0.3 + rng() * 0.04, 0.38 + rng() * 0.1, 0.12 + rng() * 0.04);
+  return c.setHSL(0.21 + rng() * 0.07, 0.3 + rng() * 0.14, 0.16 + rng() * 0.07);
 }
 
 function placePlants(): Plant[] {
@@ -244,7 +266,7 @@ function placePlants(): Plant[] {
     out.push({ kind, x, z, s, rot: rng() * Math.PI * 2, color: leafColor(rng, kind) });
   };
 
-  // park: mixed groves around the paths, a ring of conifers, hedging shrubs
+  // park: shade-tree groves and palms around the paths, hedging shrubs
   const park = SECTOR_BY_ID.get('C-12')!;
   for (let gx = -8.6; gx <= 8.6; gx += 2.6) {
     for (let gz = -8.6; gz <= 8.6; gz += 2.6) {
@@ -253,7 +275,7 @@ function placePlants(): Plant[] {
       const z = park.z + gz + (rng() - 0.5) * 1.4;
       if (Math.abs(x - park.x) < 2.4 && Math.abs(z - park.z) < 2.4) continue;
       const r = rng();
-      const kind: Kind = r < 0.68 ? 0 : r < 0.86 ? 1 : 2;
+      const kind: Kind = r < 0.5 ? 0 : r < 0.86 ? 1 : 2;
       add(kind, x, z, 0.85 + rng() * 0.5);
     }
   }
@@ -270,7 +292,10 @@ function placePlants(): Plant[] {
     for (const a of [-8.7, -3.0, 3.0, 8.7]) {
       const jitter = (rng() - 0.5) * 0.3;
       const sc = () => 0.78 + rng() * 0.26;
-      const kind = (): Kind => (rng() < 0.82 ? 0 : 2);
+      const kind = (): Kind => {
+        const r = rng();
+        return r < 0.62 ? 1 : r < 0.88 ? 0 : 2;
+      };
       add(kind(), s.x + a + jitter, s.z - off, sc());
       add(kind(), s.x + a + jitter, s.z + off, sc());
       add(kind(), s.x - off, s.z + a + jitter, sc());
@@ -278,11 +303,13 @@ function placePlants(): Plant[] {
     }
   }
 
-  // riverside promenade
+  // Corniche promenade: an unbroken line of palms
   for (let x = -73; x <= 73; x += 4.4) {
     if (Math.abs(x % 10) < 1.2) continue;
-    add(rng() < 0.75 ? 0 : 2, x + (rng() - 0.5), 65.7 + (rng() - 0.5) * 0.5, 0.82 + rng() * 0.3);
+    add(rng() < 0.85 ? 1 : 0, x + (rng() - 0.5), 65.7 + (rng() - 0.5) * 0.5, 0.86 + rng() * 0.3);
   }
+  // mosque forecourt (D-12, Corniche side)
+  for (const x of [-7.6, -4.6, -1.6, 1.4]) add(1, x, 52.4, 0.8 + rng() * 0.2);
   // campus + hospital grounds
   [
     [-36, -36],
@@ -299,7 +326,7 @@ function placePlants(): Plant[] {
 
 /* ------------------------------------------------------------------ */
 
-const KIND_GEOS: (() => BufferGeometry)[] = [() => deciduousGeo(11), () => conferGeo(23), () => columnarGeo(37), () => bushGeo(41)];
+const KIND_GEOS: (() => BufferGeometry)[] = [() => deciduousGeo(11), () => palmGeo(23), () => columnarGeo(37), () => bushGeo(41)];
 
 export function Vegetation() {
   const plants = useMemo(placePlants, []);

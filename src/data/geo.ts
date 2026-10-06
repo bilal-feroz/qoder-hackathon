@@ -118,6 +118,13 @@ export const STREETS = {
   zayedBinSultan: street({ route: '24', name: 'Sheikh Zayed Bin Sultan Street', short: 'Sheikh Zayed Bin Sultan St', ar: 'شارع الشيخ زايد بن سلطان', aka: 'Salam Street', hint: { lon: 54.3741, lat: 24.4957 } }),
 } as const;
 
+/**
+ * Street names for the procedural Al Danah grid (STREET_Z / STREET_X), used by StreetNames.tsx from main.
+ * The real-map scene labels streets from OpenStreetMap instead (MapLabels.tsx).
+ */
+export const STREET_Z_REAL: (RealStreet | null)[] = [null, STREETS.zayedFirst, STREETS.hamdan, STREETS.khalifa, STREETS.corniche];
+export const STREET_X_REAL: (RealStreet | null)[] = [null, STREETS.alOtaiba, null, STREETS.sultanBinZayed, null, null];
+
 /** The incident street. The 3D twin is built on the real OpenStreetMap streets with Khalifa Street through the origin. */
 export const INCIDENT_STREET = STREETS.khalifa;
 

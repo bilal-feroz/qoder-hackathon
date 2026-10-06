@@ -51,6 +51,17 @@ export const RIVER = { minZ: 39.4, maxZ: 92, bed: -2.4, level: -1.15 } as const;
 
 export const RIVERSIDE_AVENUE_Z = 0;
 
+/** Gulf edge and neighbourhood mosque of the procedural Al Danah city (used by StreetNames.tsx / Mosque.tsx from main). */
+export const SEA = { minZ: 68, maxZ: DIORAMA.maxZ, bed: -2.4, level: -1.15 } as const;
+export const MOSQUE = {
+  x: -4.4,
+  z: 44.2,
+  yaw: -0.4855,
+  hall: { along: 4.6, across: 5.4, h: 1.25 },
+  court: 2.6,
+  minaret: 4.8,
+} as const;
+
 export type SectorKind = 'urban' | 'park' | 'yard' | 'campus';
 
 export interface Sector {
@@ -121,7 +132,8 @@ export type BuildingKind =
   | 'substation'
   | 'cooling'
   | 'telecom'
-  | 'civic';
+  | 'civic'
+  | 'mosque';
 
 export interface Tier {
   x: number;
@@ -173,6 +185,7 @@ const KIND_LABEL: Record<BuildingKind, string> = {
   cooling: 'District cooling plant',
   telecom: 'Telecom exchange',
   civic: 'Civic building',
+  mosque: 'Mosque',
 };
 
 type Profile = 'cbd' | 'residential-high' | 'mixed' | 'low' | 'residential-mid';

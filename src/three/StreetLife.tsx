@@ -141,7 +141,7 @@ function Pedestrians() {
         add(s.x, s.z, r, r, 0.42 + rng() * 0.22);
       }
     }
-    // riverside promenade
+    // Corniche promenade
     for (let k = 0; k < 70; k++) add((rng() - 0.5) * 8, 62.95, 70 + rng() * 3, 0.25 + rng() * 0.3, 0.4 + rng() * 0.2);
     const g = personGeometry();
     const count = loops.length / 4;
