@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import { AlertOctagon, ArrowRight, Building2, Check, CircleDollarSign, Clock3, GitCompare, Hospital, MapPin, RotateCcw, ShieldCheck, Sparkles, Users, Wrench } from 'lucide-react';
 import { useTwinStore } from '../../store/useTwinStore';
 import { COSTS, INCIDENT, REPAIR_STEPS, formatMoney } from '../../data/incident';
-import { runtime } from '../../simulation/runtime';
 import { T } from '../../simulation/timeline';
 import { useAnimatedNumber } from '../../hooks/useAnimatedNumber';
 
@@ -238,7 +237,6 @@ export function RecommendationPanel() {
     if (repairOpen && scrollRef.current) scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [repairOpen, snap.repairStep]);
 
-  void runtime;
   return (
     <div className="rail-inner">
       <header className="rail-head">

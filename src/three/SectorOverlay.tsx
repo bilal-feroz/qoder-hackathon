@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
+import type { Group } from 'three';
 import { SECTOR_BY_ID, BUILDINGS, PLINTH } from '../data/city';
 import { live } from '../simulation/runtime';
 import { useTwinStore } from '../store/useTwinStore';
@@ -38,22 +39,35 @@ function AlertLabel() {
   );
 }
 
+/**
+ * Hover label for any sector. The Html root stays mounted (mounting/unmounting
+ * drei Html roots during a render is unsafe); only its anchor and content change.
+ */
 function HoverLabel() {
   const hoverSector = useTwinStore((s) => s.hoverSector);
   const xray = useTwinStore((s) => s.xray);
-  if (!hoverSector || xray) return null;
-  const s = SECTOR_BY_ID.get(hoverSector);
-  if (!s || (s.id === 'B-12' && live.sectorAlert > 0.3)) return null;
-  const sum = sectorSummary(s.id);
+  const ref = useRef<Group>(null);
+  const s = hoverSector ? SECTOR_BY_ID.get(hoverSector) : undefined;
+  const show = !!s && !xray && !(s.id === 'B-12' && live.sectorAlert > 0.3);
+
+  useFrame(() => {
+    if (ref.current && s) ref.current.position.set(s.x - PLINTH / 2 + 0.5, 0.4, s.z - PLINTH / 2 + 0.5);
+  });
+
+  const sum = s ? sectorSummary(s.id) : null;
   return (
-    <Html position={[s.x - PLINTH / 2 + 0.5, 0.4, s.z - PLINTH / 2 + 0.5]} zIndexRange={[19, 19]} style={{ pointerEvents: 'none' }}>
-      <div className="sector-tag">
-        <span className="sector-id mono">{s.id}</span>
-        <span className="sector-meta">
-          {sum.count} bldg · {s.kind === 'park' ? 'park' : s.kind === 'yard' ? 'utility' : s.kind === 'campus' ? 'campus' : `${sum.residents.toLocaleString('en-US')} res.`}
-        </span>
-      </div>
-    </Html>
+    <group ref={ref}>
+      <Html zIndexRange={[19, 19]} style={{ pointerEvents: 'none' }}>
+        {show && s && sum && (
+          <div className="sector-tag">
+            <span className="sector-id mono">{s.id}</span>
+            <span className="sector-meta">
+              {sum.count} bldg · {s.kind === 'park' ? 'park' : s.kind === 'yard' ? 'utility' : s.kind === 'campus' ? 'campus' : `${sum.residents.toLocaleString('en-US')} res.`}
+            </span>
+          </div>
+        )}
+      </Html>
+    </group>
   );
 }
 

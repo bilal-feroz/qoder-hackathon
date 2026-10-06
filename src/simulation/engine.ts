@@ -94,7 +94,7 @@ export const SCENARIO_DEFAULTS: ScenarioControlled = {
 
 export const EVENTS: { t: number; set: Partial<ScenarioControlled> }[] = [
   { t: 0, set: { shot: 'city' } },
-  { t: T.pattern, set: { shot: 'sector' } },
+  { t: T.correlate + 0.4, set: { shot: 'sector' } },
   { t: T.localize, set: { shot: 'approach' } },
   { t: T.open, set: { trench: true } },
   { t: T.xray, set: { xray: true, focus: 'water' } },

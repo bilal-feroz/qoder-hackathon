@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { Line } from '@react-three/drei';
 import { AdditiveBlending, Color, Mesh, ShaderMaterial, Vector3, type Intersection, type Raycaster } from 'three';
 import { Hospital, School, Users, Construction } from 'lucide-react';
-import { IMPACT, INCIDENT, LEAK_SURFACE, POI, TRENCH } from '../data/incident';
+import { IMPACT, INCIDENT, LEAK_SURFACE, POI } from '../data/incident';
 import { live } from '../simulation/runtime';
 import { G } from './shaders/globals';
 import { GLSL_COMMON } from './shaders/glsl';
@@ -320,4 +320,3 @@ export function ImpactZone() {
   );
 }
 
-export const TRENCH_CENTER = new Vector3((TRENCH.minX + TRENCH.maxX) / 2, 0, (TRENCH.minZ + TRENCH.maxZ) / 2);

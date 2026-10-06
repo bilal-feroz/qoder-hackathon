@@ -6,7 +6,6 @@ import type { HoverInfo } from '../store/useTwinStore';
 import type { SimSnapshot } from '../simulation/engine';
 import { sensorState } from '../three/SensorNodes';
 import { live } from '../simulation/runtime';
-import { T } from '../simulation/timeline';
 
 export type Tone = 'ok' | 'warn' | 'alert' | 'info';
 
@@ -180,8 +179,4 @@ export function describe(info: HoverInfo, snap: SimSnapshot): AssetInfo | null {
       };
     }
   }
-}
-
-export function incidentCaptionTime() {
-  return T.leak;
 }

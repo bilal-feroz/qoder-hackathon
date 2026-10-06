@@ -35,12 +35,11 @@ export function InspectorCard() {
     g.position.set(x, y + dy, z);
   });
 
-  if (!selection) return null;
-  const data = describe(selection.info, snap);
-  if (!data) return null;
+  const data = selection ? describe(selection.info, snap) : null;
   return (
     <group ref={ref}>
       <Html zIndexRange={[60, 60]} style={{ pointerEvents: 'none' }}>
+        {data && (
         <div className="inspector" role="dialog" aria-label={data.title}>
           <svg className="inspector-leader" width="40" height="40" viewBox="0 0 40 40" aria-hidden>
             <circle cx="3" cy="37" r="3" />
@@ -53,6 +52,7 @@ export function InspectorCard() {
             <AssetCardBody data={data} />
           </div>
         </div>
+        )}
       </Html>
     </group>
   );

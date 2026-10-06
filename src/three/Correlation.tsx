@@ -48,7 +48,7 @@ function CorrelationArc({ from, idx }: { from: Vector3; idx: number }) {
       ref={ref as never}
       points={pts}
       color={new Color('#ffc861').multiplyScalar(1.8)}
-      lineWidth={1.8}
+      lineWidth={2.4}
       dashed
       dashSize={0.55}
       gapSize={0.4}

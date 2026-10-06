@@ -88,7 +88,7 @@ function TrenchTiles() {
         vRoad = aCenter.xz + position.xz * aSize.xz;
         vec3 lp = position * aSize;
         lp = rotAxis(lp, tAxis, tAng) * (1.0 - te * 0.5);
-        transformed = aCenter + lp + vec3((aRnd.z - 0.5) * te * 4.0, te * (5.0 + aRnd.x * 7.0), (aRnd.w - 0.5) * te * 3.0);
+        transformed = aCenter + lp + vec3((aRnd.z - 0.5) * te * 3.0, te * (3.5 + aRnd.x * 5.0), (aRnd.w - 0.5) * te * 2.4);
       `,
       fragmentHead:
         /* glsl */ `
@@ -111,9 +111,9 @@ function TrenchTiles() {
         totalEmissiveRadiance += trs.emissive * isTop;
         vec3 ab = abs(vTileBox);
         float e1 = max(ab.x, ab.z);
-        float edgeGlow = smoothstep(0.42, 0.5, e1) * isTop + (1.0 - isTop) * 0.4;
+        float edgeGlow = smoothstep(0.44, 0.5, e1) * isTop + (1.0 - isTop) * 0.25;
         float act = vProg * (1.0 - vProg) * 4.0;
-        totalEmissiveRadiance += vec3(0.35, 0.85, 1.0) * edgeGlow * act * 2.2;
+        totalEmissiveRadiance += vec3(0.35, 0.85, 1.0) * edgeGlow * act * 1.3;
       `,
       fragmentOutput: /* glsl */ `
         outgoingLight = mix(outgoingLight, outgoingLight * 0.35, uXray);

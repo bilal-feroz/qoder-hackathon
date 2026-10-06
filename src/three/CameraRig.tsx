@@ -35,7 +35,8 @@ export function CameraRig() {
   const tween = useRef<Tween | null>(null);
   const camera = useThree((s) => s.camera) as PerspectiveCamera;
   const size = useThree((s) => s.size);
-  const clock = useThree((s) => s.clock);
+  // own time base: robust to clock resets and long pauses (hidden tabs)
+  const now = useRef(0);
 
   // limits that keep people oriented
   useEffect(() => {
@@ -80,11 +81,11 @@ export function CameraRig() {
     if (!c) return;
     c.getPosition(tmpPos);
     c.getTarget(tmpTgt);
-    const now = clock.elapsedTime;
+    const t0 = now.current;
     if (id === 'dive') {
       const pos = new CatmullRomCurve3([tmpPos.clone(), ...DIVE.path.slice(1).map(v)], false, 'centripetal', 0.5);
       const tgt = new CatmullRomCurve3([tmpTgt.clone(), ...DIVE.targets.slice(1).map(v)], false, 'centripetal', 0.5);
-      tween.current = { kind: 'path', pos, tgt, t0: now, dur: DIVE.duration };
+      tween.current = { kind: 'path', pos, tgt, t0, dur: DIVE.duration };
       return;
     }
     const pose = POSES[id as keyof typeof POSES];
@@ -95,14 +96,15 @@ export function CameraRig() {
     const fromT = id === 'intro' ? v(POSES.intro.target) : tmpTgt.clone();
     const to = id === 'intro' ? v(POSES.city.pos) : v(pose.pos);
     const toT = id === 'intro' ? v(POSES.city.target) : v(pose.target);
-    tween.current = { kind: 'pose', fromPos: from, fromTgt: fromT, toPos: to, toTgt: toT, t0: now, dur, ease };
+    tween.current = { kind: 'pose', fromPos: from, fromTgt: fromT, toPos: to, toTgt: toT, t0, dur, ease };
   }
 
-  useFrame(() => {
+  useFrame((_, delta) => {
+    now.current += Math.min(delta, 0.1);
     const c = ref.current;
     const tw = tween.current;
     if (!c || !tw) return;
-    const u = Math.min(1, (clock.elapsedTime - tw.t0) / tw.dur);
+    const u = Math.min(1, Math.max(0, (now.current - tw.t0) / tw.dur));
     if (tw.kind === 'path') {
       const e = easeInOut(u);
       tw.pos.getPoint(e, tmpPos);

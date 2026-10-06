@@ -170,10 +170,13 @@ export function createBuildingSolidMaterial() {
       }
       vec3 col = mix(fac, glass, gF.win);
       // roofs: membrane + lighter parapet
-      vec3 roof = tint * 0.42 + vec3(0.02);
-      roof *= 0.9 + 0.1 * gnoise(vLocal.xz * 1.3 + vSeed * 4.0);
-      float parapet = 1.0 - smoothstep(0.16, 0.2, gF.edgeDist);
-      roof = mix(roof, tint * 0.95, parapet);
+      vec3 roof = tint * 0.3 + vec3(0.012, 0.014, 0.018);
+      roof *= 0.88 + 0.14 * gnoise(vLocal.xz * 1.3 + vSeed * 4.0);
+      // membrane seams
+      vec2 seam = abs(fract(vLocal.xz / 1.6) - 0.5);
+      roof *= 1.0 - 0.08 * (1.0 - smoothstep(0.0, 0.03, min(seam.x, seam.y)));
+      float parapet = 1.0 - smoothstep(0.14, 0.18, gF.edgeDist);
+      roof = mix(roof, tint * 0.72, parapet);
       col = mix(col, roof, gF.top);
       // ground floor podium tone
       col *= mix(1.0, 0.72, gF.side * (1.0 - step(0.42, vLocal.y)));

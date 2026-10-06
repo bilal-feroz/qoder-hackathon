@@ -129,7 +129,7 @@ export function SceneEnvironment() {
     <>
       <SkyDome />
       <GridFloor />
-      <hemisphereLight args={['#8fb0dc', '#15130f', 0.5]} />
+      <hemisphereLight args={['#8fb0dc', '#15130f', 0.62]} />
       <directionalLight
         ref={keyRef}
         position={[-85, 150, 110]}
