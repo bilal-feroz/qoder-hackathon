@@ -13,7 +13,6 @@ interface CardProps {
   label: string;
   value: string;
   unit?: string;
-  sub: string;
   tone: ChipTone;
   chip: string;
   history: number[];
@@ -21,7 +20,7 @@ interface CardProps {
   projected: boolean;
 }
 
-function SignalCard({ icon, label, value, unit, sub, tone, chip, history, domain, projected }: CardProps) {
+function SignalCard({ icon, label, value, unit, tone, chip, history, domain, projected }: CardProps) {
   const color = tone === 'warn' ? 'var(--amber)' : tone === 'alert' ? 'var(--red)' : 'var(--cyan)';
   return (
     <article className={`sig-card tone-${tone} ${projected ? 'is-projected' : ''}`}>
@@ -37,7 +36,6 @@ function SignalCard({ icon, label, value, unit, sub, tone, chip, history, domain
         {unit && <span className="sig-unit">{unit}</span>}
       </div>
       <Sparkline values={history} color={color} domain={domain} />
-      <div className="sig-sub">{sub}</div>
     </article>
   );
 }
@@ -52,17 +50,7 @@ function WhyAlert() {
   const shown = useAnimatedNumber(confidence, 6);
   const C = 2 * Math.PI * 22;
 
-  if (!anomaly || confidence < 0.5) {
-    return (
-      <section className="why is-idle" aria-label="Why this alert">
-        <header className="why-head">
-          <BrainCircuit size={14} />
-          <span>Why this alert?</span>
-        </header>
-        <p className="why-idle">{anomaly ? 'Weak deviations observed. Waiting for a correlated pattern…' : 'No active alerts. The model fuses weak signals from 216 sensors to flag failures before anything breaks.'}</p>
-      </section>
-    );
-  }
+  if (!anomaly || confidence < 0.5) return null;
 
   return (
     <section className={`why ${localized ? 'is-final' : ''}`} aria-label="Why this alert">
@@ -94,7 +82,7 @@ function WhyAlert() {
           <div className="why-gauge-label">combined confidence</div>
         </div>
       </div>
-      <p className="why-note">{resolved ? 'Pattern cleared after repair.' : 'No single signal crossed its alarm threshold — the correlated pattern did.'}</p>
+      <p className="why-note">{resolved ? 'Pattern cleared.' : 'No single signal crossed its threshold.'}</p>
     </section>
   );
 }
@@ -116,17 +104,13 @@ export function SignalRail() {
     <div className="rail-inner">
       <header className="rail-head">
         <span className="rail-title">Live signals</span>
-        <span className="rail-meta">
-          <span className="live-dot small" aria-hidden /> 4 of 216 streams
-        </span>
+        <span className="live-dot small" aria-hidden />
       </header>
       <div className="sig-grid">
         <SignalCard
           icon={<Gauge size={15} />}
           label="Water Pressure"
           value={active ? `${sign(tel.pressureDev)}%` : '100%'}
-          unit={active ? undefined : 'of nominal'}
-          sub={`${tel.pressureBar.toFixed(2)} bar · tolerance ±5%`}
           tone={pTone}
           chip={pTone === 'ok' ? (resolved ? 'Recovered' : 'Normal') : 'Drift'}
           history={history.pressure}
@@ -137,7 +121,6 @@ export function SignalRail() {
           icon={<Droplets size={15} />}
           label="Ground Moisture"
           value={active && tel.moistureDev > 0.6 ? `+${tel.moistureDev.toFixed(0)}%` : 'Normal'}
-          sub={`Soil ${(21 + tel.moistureDev * 0.21).toFixed(1)}% VWC · tolerance +25%`}
           tone={mTone}
           chip={mTone === 'ok' ? 'Normal' : mTone === 'info' ? 'Drying' : 'Elevated'}
           history={history.moisture}
@@ -148,7 +131,6 @@ export function SignalRail() {
           icon={<Thermometer size={15} />}
           label="Temperature"
           value={active && tel.tempDev > 0.3 ? `+${tel.tempDev.toFixed(0)}%` : 'Normal'}
-          sub={`Ground ${(14 * (1 + tel.tempDev / 100)).toFixed(1)} °C · tolerance ±6%`}
           tone={tTone}
           chip={tTone === 'ok' ? 'Normal' : tTone === 'info' ? 'Settling' : 'Variance'}
           history={history.temp}
@@ -159,7 +141,6 @@ export function SignalRail() {
           icon={<Activity size={15} />}
           label="Network Health"
           value={`${tel.networkHealth.toFixed(1)}%`}
-          sub="Integrity index · 5 networks"
           tone={nTone}
           chip={nTone === 'ok' ? 'Healthy' : 'Degraded'}
           history={history.health}

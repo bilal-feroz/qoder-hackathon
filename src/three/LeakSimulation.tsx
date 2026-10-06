@@ -307,7 +307,6 @@ function LeakAnnotation() {
               <b className="tnum">{future ? 'T+44 h' : `${INCIDENT.failureWindow[0]}–${INCIDENT.failureWindow[1]} h`}</b>
             </div>
           </div>
-          <div className="leak-asset mono">{INCIDENT.asset} · Riverside Ave</div>
         </div>
       </div>
     </FadeHtml>

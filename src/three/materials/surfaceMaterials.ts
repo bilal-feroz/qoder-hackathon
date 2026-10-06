@@ -88,6 +88,12 @@ RoadSample roadSample(vec2 p) {
 `;
 
 const XRAY_GROUND_GLSL = /* glsl */ `
+/* faint diagonal scan band that sweeps the district every ~20 s: "live twin" */
+float liveSweep(vec2 p) {
+  float s = mod(uTime * 13.0, 300.0) - 150.0;
+  float d = (p.x + p.y * 0.55) - s;
+  return exp(-abs(d) * 0.55) * 0.06 + exp(-abs(d) * 4.0) * 0.05;
+}
 vec3 xrayGrid(vec2 p) {
   vec2 g = abs(fract(p / 5.0 + 0.5) - 0.5) * 5.0;
   vec2 fw = fwidth(p) * 1.2;
@@ -128,6 +134,7 @@ export function createAsphaltMaterial() {
     `,
     fragmentEmissive: /* glsl */ `
       totalEmissiveRadiance += rs.emissive;
+      totalEmissiveRadiance += vec3(0.25, 0.75, 1.0) * liveSweep(gp) * (1.0 - uXray);
     `,
     fragmentOutput: /* glsl */ `
       outgoingLight = mix(outgoingLight, outgoingLight * 0.35 + xrayGrid(gp), uXray);
@@ -219,6 +226,7 @@ export function createPlinthMaterial() {
       e += uSectorColor * isAlert * uSectorAlert * (ring * 1.5 * pa + topF * 0.035);
       float scan = 1.0 - smoothstep(0.0, 0.6, abs(fract(uTime * 0.35) * 26.0 - 13.0 - l.y));
       e += uSectorColor * isAlert * uSectorAlert * scan * topF * 0.12;
+      e += vec3(0.25, 0.75, 1.0) * liveSweep(gp) * topF * (1.0 - uXray);
       totalEmissiveRadiance += e;
     `,
     fragmentOutput: /* glsl */ `

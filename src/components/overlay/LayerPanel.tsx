@@ -1,6 +1,6 @@
 import { Eye, EyeOff, Layers, X } from 'lucide-react';
 import { useTwinStore } from '../../store/useTwinStore';
-import { LAYERS, LAYER_ORDER, networkLengthKm } from '../../data/networks';
+import { LAYERS, LAYER_ORDER } from '../../data/networks';
 
 export function LayerPanel() {
   const open = useTwinStore((s) => s.layerPanel);
@@ -9,19 +9,8 @@ export function LayerPanel() {
   const visible = useTwinStore((s) => s.visible);
   const setFocus = useTwinStore((s) => s.setFocus);
   const toggleVisible = useTwinStore((s) => s.toggleVisible);
-  const xray = useTwinStore((s) => s.xray);
-  const trench = useTwinStore((s) => s.trench);
-  const exploded = useTwinStore((s) => s.exploded);
 
-  if (!open) {
-    return (
-      <button className="ov-chip layer-collapsed" onClick={() => setOpen(true)} aria-label="Show layers">
-        <Layers size={14} /> Layers
-      </button>
-    );
-  }
-
-  const hidden = !xray && !trench && !exploded;
+  if (!open) return null;
 
   return (
     <section className="ov-panel layer-panel" aria-label="Infrastructure layers">
@@ -43,7 +32,6 @@ export function LayerPanel() {
               <button className="layer-main" onClick={() => setFocus(isFocus ? null : id)} aria-pressed={isFocus} title={`Emphasize ${l.label}`}>
                 <span className="layer-swatch" />
                 <span className="layer-name">{l.label}</span>
-                <span className="layer-km tnum">{networkLengthKm(id).toFixed(1)} km</span>
               </button>
               <button className="icon-btn sm" onClick={() => toggleVisible(id)} aria-label={`${visible[id] ? 'Hide' : 'Show'} ${l.label}`} aria-pressed={visible[id]}>
                 {visible[id] ? <Eye size={13} /> : <EyeOff size={13} />}
@@ -52,15 +40,13 @@ export function LayerPanel() {
           );
         })}
       </ul>
-      <footer className="layer-foot">
-        {focus ? (
+      {focus && (
+        <footer className="layer-foot">
           <button className="link-btn" onClick={() => setFocus(null)}>
-            Show all networks
+            Show all
           </button>
-        ) : (
-          <span className="muted">{hidden ? 'Select a network to see underground' : 'Select a network to emphasize it'}</span>
-        )}
-      </footer>
+        </footer>
+      )}
     </section>
   );
 }

@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { BoxGeometry, BufferGeometry, Color, CylinderGeometry, EdgesGeometry, Float32BufferAttribute, Group, InstancedMesh, LineBasicMaterial, LineSegments, Matrix4, Quaternion, ShaderMaterial, Vector3, type Intersection, type Raycaster } from 'three';
 import { LAYERS, LAYER_ORDER, NETWORKS, networkLengthKm, type LayerId } from '../data/networks';
 import { SENSORS } from '../data/sensors';
-import { DIORAMA, RIVER, BUILDINGS, SECTORS } from '../data/city';
+import { DIORAMA, RIVER, BUILDINGS } from '../data/city';
 import { live } from '../simulation/runtime';
 import { NetworkLayer } from './networks/NetworkLayer';
 import { SensorNodes } from './SensorNodes';
@@ -65,16 +65,13 @@ function ExplodedPlate({ color, y }: { color: string; y: number }) {
 function LayerLabel({ id }: { id: LayerId }) {
   const layer = LAYERS[id];
   const km = networkLengthKm(id).toFixed(1);
-  const sensors = SENSORS.filter((s) => s.layer === id).length;
   return (
     <FadeHtml position={[DIORAMA.maxX + 6, layer.depth, RIVER.minZ - 4]} opacity={() => (G.uExploded.value - 0.6) * 2.5} zIndex={20}>
       <div className="layer-label" style={{ ['--c' as string]: layer.color }}>
         <span className="layer-label-swatch" />
         <div>
           <div className="layer-label-name">{layer.label}</div>
-          <div className="layer-label-meta">
-            {layer.description} · {km} km · {sensors} sensors
-          </div>
+          <div className="layer-label-meta">{km} km</div>
         </div>
       </div>
     </FadeHtml>
@@ -159,9 +156,7 @@ function SurfaceLabel() {
         <span className="layer-label-swatch" />
         <div>
           <div className="layer-label-name">City surface</div>
-          <div className="layer-label-meta">
-            {BUILDINGS.length} buildings · {SECTORS.length} sectors · roads & access points
-          </div>
+          <div className="layer-label-meta">{BUILDINGS.length} buildings</div>
         </div>
       </div>
     </FadeHtml>

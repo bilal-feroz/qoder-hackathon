@@ -17,15 +17,13 @@ export function CameraPresets() {
   return (
     <div className="ov-bar presets" role="toolbar" aria-label="Camera presets">
       {PRESET_LABELS.map((p, i) => (
-        <button key={p.id} className={`preset-btn ${active === p.id ? 'is-on' : ''}`} onClick={() => setPreset(p.id)} title={`${p.hint} (${i + 1})`} aria-pressed={active === p.id}>
+        <button key={p.id} className={`preset-btn icon-only ${active === p.id ? 'is-on' : ''}`} onClick={() => setPreset(p.id)} title={`${p.label} — ${p.hint} (${i + 1})`} aria-label={p.label} aria-pressed={active === p.id}>
           {PRESET_ICON[p.id]}
-          <span>{p.label}</span>
         </button>
       ))}
       <span className="bar-sep" aria-hidden />
-      <button className="preset-btn" onClick={resetView} title="Reset view (0)">
+      <button className="preset-btn icon-only" onClick={resetView} title="Reset view (0)" aria-label="Reset view">
         <RotateCcw size={14} />
-        <span>Reset view</span>
       </button>
     </div>
   );
@@ -51,7 +49,7 @@ export function ViewToggles() {
         </button>
         <button className={`toggle-btn ${exploded ? 'is-on' : ''}`} onClick={toggleExploded} aria-pressed={exploded} title="Separate the infrastructure layers (E)">
           <Boxes size={15} />
-          <span>Exploded view</span>
+          <span>Exploded</span>
         </button>
       </div>
       <div className={`ov-bar time-seg ${canFuture ? '' : 'is-disabled'}`} role="group" aria-label="Time">

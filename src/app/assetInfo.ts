@@ -14,6 +14,8 @@ export interface InfoRow {
   value: string;
   tone?: Tone;
   mono?: boolean;
+  /** shown in the compact hover card */
+  key?: boolean;
 }
 
 export interface AssetInfo {
@@ -87,10 +89,10 @@ export function describe(info: HoverInfo, snap: SimSnapshot): AssetInfo | null {
             { label: 'Material', value: seg.meta.material },
             { label: 'Diameter', value: `${seg.meta.diameterMm} mm` },
             { label: 'Install year', value: String(seg.meta.installYear) },
-            { label: 'Pressure', value: `${snap.pressureBar.toFixed(2)} bar`, mono: true },
-            { label: 'Deviation', value: `${fmt(snap.pressureDev)}%`, tone: Math.abs(snap.pressureDev) > 1 ? 'warn' : undefined, mono: true },
-            { label: 'Health', value: repaired ? '96%' : `${seg.meta.health}%`, tone: repaired ? 'ok' : 'alert' },
-            { label: 'Predicted failure', value: repaired ? '—' : snap.localized ? `${INCIDENT.failureWindow[0]}–${INCIDENT.failureWindow[1]} h` : 'Assessing…', tone: repaired ? undefined : 'alert' },
+            { label: 'Pressure', value: `${snap.pressureBar.toFixed(2)} bar`, mono: true, key: true },
+            { label: 'Deviation', value: `${fmt(snap.pressureDev)}%`, tone: Math.abs(snap.pressureDev) > 1 ? 'warn' : undefined, mono: true, key: true },
+            { label: 'Health', value: repaired ? '96%' : `${seg.meta.health}%`, tone: repaired ? 'ok' : 'alert', key: true },
+            { label: 'Predicted failure', value: repaired ? '—' : snap.localized ? `${INCIDENT.failureWindow[0]}–${INCIDENT.failureWindow[1]} h` : 'Assessing…', tone: repaired ? undefined : 'alert', key: true },
           ],
         };
       }

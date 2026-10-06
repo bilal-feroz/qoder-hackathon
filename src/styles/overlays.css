@@ -972,3 +972,15 @@ li.is-done .loader-check {
   letter-spacing: -0.01em;
   color: var(--text-1);
 }
+
+/* icon-only camera presets */
+.ov-bar.presets {
+  min-width: 0;
+}
+
+.presets .preset-btn.icon-only {
+  width: 34px;
+  height: 32px;
+  padding: 0;
+  justify-content: center;
+}

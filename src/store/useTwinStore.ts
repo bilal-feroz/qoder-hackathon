@@ -128,7 +128,7 @@ export const useTwinStore = create<TwinState>()((set, get) => ({
 
   shot: { id: 'intro', nonce: 0 },
   activePreset: 'city',
-  layerPanel: true,
+  layerPanel: false,
   scenarioMenu: false,
   infoOpen: false,
 

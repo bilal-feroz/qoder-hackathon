@@ -34,7 +34,7 @@ function Workflow() {
                 <Icon size={13} />
                 {s.title}
               </div>
-              <div className="wf-sub">{s.sub}</div>
+              {state === 'active' && <div className="wf-sub">{s.sub}</div>}
             </li>
           );
         })}
@@ -77,9 +77,7 @@ function FailureTimeline() {
 
   return (
     <section className={`strip-sec tl is-${state}`} aria-label="Failure prediction">
-      <div className="strip-label">
-        Failure prediction <span className="strip-label-sub">{INCIDENT.asset}</span>
-      </div>
+      <div className="strip-label">Failure prediction</div>
       <svg viewBox={`0 0 ${W} ${H}`} className="tl-svg" preserveAspectRatio="none" role="img" aria-label={`Predicted failure window ${a} to ${b} hours`}>
         {bands.map((bd) => (
           <g key={bd.label}>
@@ -115,18 +113,14 @@ function FailureTimeline() {
         )}
       </svg>
       <div className="tl-foot">
-        {state === 'idle' && <span className="muted">No degradation forecast</span>}
         {state === 'forecast' && (
-          <>
-            <span className="tl-conclusion">
-              Failure likely in <b className="tnum">{a}–{b} h</b>
-            </span>
-            <span className="muted">if no action is taken</span>
-          </>
+          <span className="tl-conclusion">
+            Failure in <b className="tnum">{a}–{b} h</b>
+          </span>
         )}
         {state === 'repaired' && (
           <span className="tl-conclusion is-ok">
-            Section replaced · <b>no failure forecast</b>
+            <b>No failure forecast</b>
           </span>
         )}
       </div>
@@ -143,18 +137,18 @@ function ValueCard() {
   return (
     <section className={`strip-sec val ${on ? 'is-on' : ''}`} aria-label="Fix before failure">
       <div className="strip-label">
-        Fix before failure <span className="tag-demo">Demo simulation</span>
+        Fix before failure <span className="tag-demo">Demo</span>
       </div>
       <div className="val-bars">
         <div className="val-row">
-          <span>Preventive repair</span>
+          <span>Repair now</span>
           <div className="val-bar is-good">
             <i style={{ width: on ? `${Math.max(ratio * 100, 4)}%` : '0%' }} />
           </div>
           <b className="tnum">{formatMoney(COSTS.preventive)}</b>
         </div>
         <div className="val-row">
-          <span>Potential failure</span>
+          <span>If it fails</span>
           <div className="val-bar is-bad">
             <i style={{ width: on ? '100%' : '0%' }} />
           </div>
@@ -162,7 +156,7 @@ function ValueCard() {
         </div>
       </div>
       <div className="val-total">
-        <span>Estimated loss avoided</span>
+        <span>Loss avoided</span>
         <b className="tnum">{on ? `$${(avoided / 1_000_000).toFixed(2)}M` : '—'}</b>
       </div>
     </section>

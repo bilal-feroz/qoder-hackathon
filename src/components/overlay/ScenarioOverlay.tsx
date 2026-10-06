@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { CheckCircle2, Loader, OctagonAlert, Pause, Play, Radar, RotateCcw, SkipForward, TriangleAlert, Wrench, X, Zap } from 'lucide-react';
 import { useTwinStore } from '../../store/useTwinStore';
+import { useDismiss } from '../../hooks/useDismiss';
 import { T, TIMELINE_MARKERS } from '../../simulation/timeline';
 import { runtime } from '../../simulation/runtime';
 import { INCIDENT } from '../../data/incident';
@@ -25,10 +26,7 @@ export function ScenarioCaption() {
     <div className="caption-wrap" aria-live="polite">
       <div key={caption.key} className={`caption tone-${caption.tone}`}>
         <Icon size={16} className={caption.key === 'correlate' || caption.key === 'localize' ? 'spin' : ''} />
-        <div>
-          <div className="caption-title">{caption.title}</div>
-          {caption.detail && <div className="caption-detail">{caption.detail}</div>}
-        </div>
+        <div className="caption-title">{caption.title}</div>
       </div>
     </div>
   );
@@ -73,7 +71,7 @@ export function ScenarioTransport() {
           </span>
           <span className="run-text">
             <span className="run-title">Run failure scenario</span>
-            <span className="run-sub">{INCIDENT.scenarioName} · ~50 s</span>
+            <span className="run-sub">Sector B-12 · 50 s</span>
           </span>
         </button>
         <button className="link-btn skip-link" onClick={skip}>
@@ -124,9 +122,12 @@ export function ScenarioMenu() {
   const skip = useTwinStore((s) => s.skipToIncident);
   const reset = useTwinStore((s) => s.reset);
   const viewRepairPlan = useTwinStore((s) => s.viewRepairPlan);
+  const ref = useRef<HTMLDivElement>(null);
+  const close = useCallback(() => setOpen(false), [setOpen]);
+  useDismiss(ref, open, close, '[data-popover-toggle="scenario"]');
   if (!open) return null;
   return (
-    <div className="popover scenario-menu" role="dialog" aria-label="Scenario">
+    <div className="popover scenario-menu" role="dialog" aria-label="Scenario" ref={ref}>
       <div className="popover-head">
         <div>
           <div className="popover-kicker">Guided scenario</div>
@@ -136,7 +137,6 @@ export function ScenarioMenu() {
           <X size={13} />
         </button>
       </div>
-      <p className="muted">Small pressure, moisture and temperature drifts in Sector B-12 combine into a predicted water-main failure. The twin localizes it, forecasts the failure window, estimates the public impact and plans the repair.</p>
       <div className="menu-actions">
         <button className="btn-primary" onClick={run}>
           <Play size={15} /> Run from start
@@ -174,7 +174,7 @@ export function FutureOverlay() {
         <TriangleAlert size={16} />
         <div>
           <div className="future-title">Predicted state · if no action is taken</div>
-          <div className="future-sub">Simulation · T+48 h · burst likely at ~44 h · zone grows to {INCIDENT.futurePopulation.toLocaleString('en-US')} residents</div>
+          <div className="future-sub">Simulation · T+48 h</div>
         </div>
         <button className="btn-ghost sm" onClick={() => setFuture(false)}>
           Back to now

@@ -23,21 +23,6 @@ function Monitoring() {
         <span>MONITORING</span>
       </div>
       <p className="rec-lede">No intervention required.</p>
-      <ul className="rec-facts">
-        <li>
-          <span>Networks within tolerance</span>
-          <b className="tnum">5 / 5</b>
-        </li>
-        <li>
-          <span>Sensors online</span>
-          <b className="tnum">216 / 216</b>
-        </li>
-        <li>
-          <span>Open recommendations</span>
-          <b className="tnum">0</b>
-        </li>
-      </ul>
-      <p className="rec-hint">Run the failure scenario to watch the twin detect, predict, prioritize and plan.</p>
     </div>
   );
 }
@@ -60,12 +45,12 @@ function Analyzing() {
         </span>
       </p>
       <ul className="evi-list">
-        <Evidence on={snap.patternDetected} icon={<MapPin size={13} />} title="Location" value="Sector B-12 · Riverside Ave" tone="warn" />
-        <Evidence on={snap.localized} icon={<AlertOctagon size={13} />} title="Possible water leak" value={`${INCIDENT.confidence}% conf.`} />
-        <Evidence on={snap.localized} icon={<Wrench size={13} />} title="Asset" value={`${INCIDENT.asset} · 67% health`} />
-        <Evidence on={snap.prediction} icon={<Clock3 size={13} />} title="Predicted failure" value={`${INCIDENT.failureWindow[0]}–${INCIDENT.failureWindow[1]} h`} />
-        <Evidence on={snap.impact} icon={<Users size={13} />} title="Residents at risk" value={INCIDENT.population.toLocaleString('en-US')} />
-        <Evidence on={snap.impact} icon={<Hospital size={13} />} title="Hospital" value="320 m away" />
+        <Evidence on={snap.patternDetected} icon={<MapPin size={13} />} title="Location" value="Sector B-12" tone="warn" />
+        <Evidence on={snap.localized} icon={<AlertOctagon size={13} />} title="Water leak" value={`${INCIDENT.confidence}%`} />
+        <Evidence on={snap.localized} icon={<Wrench size={13} />} title="Asset" value={INCIDENT.asset} />
+        <Evidence on={snap.prediction} icon={<Clock3 size={13} />} title="Failure in" value={`${INCIDENT.failureWindow[0]}–${INCIDENT.failureWindow[1]} h`} />
+        <Evidence on={snap.impact} icon={<Users size={13} />} title="Residents" value={INCIDENT.population.toLocaleString('en-US')} />
+        <Evidence on={snap.impact} icon={<Hospital size={13} />} title="Hospital" value="320 m" />
       </ul>
     </div>
   );
@@ -88,13 +73,11 @@ function Recommendation() {
       </div>
       <div className="rec-where">
         <MapPin size={14} />
-        <span>
-          <b>Sector B-12</b> · Riverside Avenue
-        </span>
+        <b>Sector B-12</b>
       </div>
       <div className="rec-action">
         <span className="rec-action-label">Action</span>
-        <span className="rec-action-text">Repair within {INCIDENT.respondWithinHours} h — dispatch maintenance crew</span>
+        <span className="rec-action-text">Repair within {INCIDENT.respondWithinHours} h</span>
       </div>
       <div className="rec-kpis">
         <div className="kpi">
@@ -102,34 +85,28 @@ function Recommendation() {
             <Users size={12} /> Impact
           </span>
           <b className="tnum">12,400</b>
-          <span className="kpi-sub">residents</span>
         </div>
         <div className="kpi">
           <span className="kpi-label">
             <Hospital size={12} /> Hospital
           </span>
           <b className="tnum">320 m</b>
-          <span className="kpi-sub">from the leak</span>
         </div>
         <div className="kpi">
           <span className="kpi-label">
             <CircleDollarSign size={12} /> Preventive cost
           </span>
           <b className="tnum">~{formatMoney(COSTS.preventive)}</b>
-          <span className="kpi-sub">
-            {formatMoney(COSTS.preventiveRange[0])}–{formatMoney(COSTS.preventiveRange[1])}
-          </span>
         </div>
         <div className="kpi is-good">
           <span className="kpi-label">
             <ShieldCheck size={12} /> Avoided impact
           </span>
           <b className="tnum">~{formatMoney(COSTS.avoided)}</b>
-          <span className="kpi-sub">vs {formatMoney(COSTS.failure)}+ failure</span>
         </div>
       </div>
-      <details className="rec-why" open={!repairOpen}>
-        <summary>Why B-12 is prioritized</summary>
+      <details className="rec-why">
+        <summary>Why B-12</summary>
         <ul>
           <li>12,400 residents on this supply zone</li>
           <li>Central Medical Center 320 m away</li>
@@ -156,7 +133,6 @@ function RepairPlan() {
     <div className="plan rec-enter" aria-label="Repair plan">
       <div className="plan-head">
         <span>Repair plan</span>
-        <span className="plan-meta">AI-generated · operator approval</span>
       </div>
       <ol className="plan-steps">
         {REPAIR_STEPS.map((s, i) => {
@@ -167,7 +143,7 @@ function RepairPlan() {
               <span className="plan-num">{state === 'done' ? <Check size={13} strokeWidth={3} /> : String(s.id).padStart(2, '0')}</span>
               <div className="plan-body">
                 <div className="plan-title">{s.title}</div>
-                <div className="plan-detail">{s.detail}</div>
+                {state === 'active' && <div className="plan-detail">{s.detail}</div>}
                 {state === 'active' && (
                   <div className="plan-progress">
                     <i style={{ width: `${p * 100}%` }} />
@@ -210,7 +186,7 @@ function Resolved() {
         <span className="risk-to tnum">{Math.round(risk)}</span>
       </div>
       <p className="rec-note">
-        <Building2 size={13} /> The city never visibly broke — the twin planned the repair before the pipe failed.
+        <Building2 size={13} /> Fixed before anything broke.
       </p>
       <div className="rec-actions">
         <button className={`btn-primary ${compare ? 'is-on' : ''}`} onClick={() => setCompare(compare ? null : 'none')}>
@@ -241,7 +217,6 @@ export function RecommendationPanel() {
     <div className="rail-inner">
       <header className="rail-head">
         <span className="rail-title">AI recommendation</span>
-        <span className="rail-meta">Decision support</span>
       </header>
       <div className="rec-scroll" ref={scrollRef}>
         {key === 'monitor' && <Monitoring />}

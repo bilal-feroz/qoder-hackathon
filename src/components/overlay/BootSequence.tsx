@@ -78,7 +78,6 @@ export function BootSequence() {
                 <li key={s.label} className={i < step ? 'is-done' : i === step ? 'is-active' : ''}>
                   <span className="loader-check">{i < step ? <Check size={12} strokeWidth={3} /> : <i />}</span>
                   <span className="loader-label">{s.label}</span>
-                  <span className="loader-meta">{s.meta}</span>
                 </li>
               ))}
             </ul>

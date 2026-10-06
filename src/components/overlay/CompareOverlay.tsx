@@ -53,9 +53,6 @@ export function CompareOverlay() {
           </ul>
         </button>
       </div>
-      <footer className="compare-foot">
-        Same pipe, same city — acting <b>36 hours early</b> turns a {formatMoney(COSTS.failure)} failure into a {formatMoney(COSTS.preventive)} planned repair.
-      </footer>
     </div>
   );
 }

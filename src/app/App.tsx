@@ -64,7 +64,7 @@ export function App() {
 
   return (
     <div className={`app boot-${boot} ${compact ? 'is-compact' : ''} ${drawer ? `drawer-${drawer}` : ''} phase-${phase.toLowerCase()}`}>
-      <div className="stage">
+      <div className="stage" role="application" aria-label="Interactive 3D digital twin of the Riverside District: buildings, roads and five underground utility networks">
         <Canvas
           shadows
           dpr={dpr}

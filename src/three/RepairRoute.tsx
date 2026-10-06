@@ -261,7 +261,6 @@ function DepotBeacon() {
           </span>
           <div>
             <div className="poi-name">{POI.depot.name}</div>
-            <div className="poi-meta">Crew 07 available · 3 technicians</div>
           </div>
         </div>
       </FadeHtml>

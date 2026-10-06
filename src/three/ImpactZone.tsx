@@ -76,7 +76,7 @@ function ZoneDisc() {
   );
 }
 
-function Arc({ to, label }: { to: [number, number, number]; label: string }) {
+function Arc({ to }: { to: [number, number, number] }) {
   const points = useMemo(() => {
     const a = new Vector3(LEAK_SURFACE.x, 0.3, LEAK_SURFACE.z);
     const b = new Vector3(...to);
@@ -97,7 +97,6 @@ function Arc({ to, label }: { to: [number, number, number]; label: string }) {
     m.dashOffset -= dt * 1.6;
     m.opacity = live.pois * 0.9;
   });
-  const mid = points[20];
   return (
     <group>
       <Line
@@ -113,9 +112,6 @@ function Arc({ to, label }: { to: [number, number, number]; label: string }) {
         depthWrite={false}
         raycast={noRaycast}
       />
-      <FadeHtml position={[mid.x, mid.y + 0.6, mid.z]} opacity={() => live.pois} zIndex={24} center>
-        <div className="distance-chip mono">{label}</div>
-      </FadeHtml>
     </group>
   );
 }
@@ -131,7 +127,7 @@ function PoiBadges() {
           </span>
           <div>
             <div className="poi-name">{POI.hospital.name}</div>
-            <div className="poi-meta">{future ? 'Supply at risk · backup tanks 8 h' : `${POI.hospital.distanceM} m from leak · critical facility`}</div>
+            <div className="poi-meta">{POI.hospital.distanceM} m</div>
           </div>
         </div>
       </FadeHtml>
@@ -142,17 +138,17 @@ function PoiBadges() {
           </span>
           <div>
             <div className="poi-name">{POI.school.name}</div>
-            <div className="poi-meta">{POI.school.distanceM} m from leak · 1,150 students</div>
+            <div className="poi-meta">{POI.school.distanceM} m</div>
           </div>
         </div>
       </FadeHtml>
-      <Arc to={[POI.hospital.x, POI.hospital.y + 0.4, POI.hospital.z]} label={`${POI.hospital.distanceM} m`} />
-      <Arc to={[POI.school.x, POI.school.y + 0.4, POI.school.z]} label={`${POI.school.distanceM} m`} />
+      <Arc to={[POI.hospital.x, POI.hospital.y + 0.4, POI.hospital.z]} />
+      <Arc to={[POI.school.x, POI.school.y + 0.4, POI.school.z]} />
       <FadeHtml position={[IMPACT.center.x - 30, 1.2, IMPACT.center.z - 40]} opacity={() => live.impact * live.pois} zIndex={22}>
         <div className="zone-label">
           <Users size={14} strokeWidth={2.2} />
-          <span className="tnum">≈ {(future ? INCIDENT.futurePopulation : INCIDENT.population).toLocaleString('en-US')}</span>
-          <span className="zone-label-sub">residents in affected zone</span>
+          <span className="tnum">{(future ? INCIDENT.futurePopulation : INCIDENT.population).toLocaleString('en-US')}</span>
+          <span className="zone-label-sub">residents</span>
         </div>
       </FadeHtml>
     </group>
@@ -226,8 +222,8 @@ function RoadAlert() {
       <FadeHtml position={[-24, 0.6, 2.5]} opacity={() => live.road} zIndex={23}>
         <div className={`road-chip ${future ? 'is-closed' : ''}`}>
           <Construction size={13} strokeWidth={2.2} />
-          <span>Riverside Avenue</span>
-          <b>{future ? 'CLOSED' : 'closure risk'}</b>
+          <span>Riverside Ave</span>
+          <b>{future ? 'CLOSED' : 'at risk'}</b>
         </div>
       </FadeHtml>
     </group>

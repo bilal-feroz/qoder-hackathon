@@ -109,6 +109,12 @@ function TrenchTiles() {
       `,
       fragmentEmissive: /* glsl */ `
         totalEmissiveRadiance += trs.emissive * isTop;
+        {
+          float sw0 = mod(uTime * 13.0, 300.0) - 150.0;
+          float swd = (vRoad.x + vRoad.y * 0.55) - sw0;
+          float swv = exp(-abs(swd) * 0.55) * 0.06 + exp(-abs(swd) * 4.0) * 0.05;
+          totalEmissiveRadiance += vec3(0.25, 0.75, 1.0) * swv * isTop * (1.0 - uXray) * (1.0 - vProg);
+        }
         vec3 ab = abs(vTileBox);
         float e1 = max(ab.x, ab.z);
         float edgeGlow = smoothstep(0.44, 0.5, e1) * isTop + (1.0 - isTop) * 0.25;

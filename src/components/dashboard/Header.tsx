@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Info, Layers, LayoutGrid, PlayCircle } from 'lucide-react';
 import { useTwinStore } from '../../store/useTwinStore';
+import { useDismiss } from '../../hooks/useDismiss';
 
 function LogoMark() {
   return (
@@ -21,7 +22,6 @@ function Clock() {
   return (
     <div className="hdr-clock">
       <span className="mono tnum">{now.toLocaleTimeString('en-GB', { hour12: false })}</span>
-      <span className="hdr-clock-sub">Riverside District</span>
     </div>
   );
 }
@@ -68,6 +68,9 @@ export function Header() {
   const activePreset = useTwinStore((s) => s.activePreset);
   const infoOpen = useTwinStore((s) => s.infoOpen);
   const setInfoOpen = useTwinStore((s) => s.setInfoOpen);
+  const infoRef = useRef<HTMLDivElement>(null);
+  const closeInfo = useCallback(() => setInfoOpen(false), [setInfoOpen]);
+  useDismiss(infoRef, infoOpen, closeInfo, '[data-popover-toggle="info"]');
 
   return (
     <header className="hdr panel-enter" style={{ ['--enter-delay' as string]: '0ms' }}>
@@ -83,7 +86,7 @@ export function Header() {
 
       <div className="hdr-right">
         <nav className="seg" aria-label="Views">
-          <button className={`seg-btn ${activePreset === 'city' && !layerPanel && !scenarioMenu ? 'is-on' : ''}`} onClick={() => resetView()} title="Overview (0)">
+          <button className={`seg-btn ${activePreset === 'city' ? 'is-on' : ''}`} onClick={() => resetView()} title="Overview (0)">
             <LayoutGrid size={14} />
             Overview
           </button>
@@ -91,18 +94,18 @@ export function Header() {
             <Layers size={14} />
             Layers
           </button>
-          <button className={`seg-btn ${scenarioMenu ? 'is-on' : ''}`} onClick={() => setScenarioMenu(!scenarioMenu)} aria-pressed={scenarioMenu} title="Scenario">
+          <button className={`seg-btn ${scenarioMenu ? 'is-on' : ''}`} onClick={() => setScenarioMenu(!scenarioMenu)} aria-pressed={scenarioMenu} title="Scenario" data-popover-toggle="scenario">
             <PlayCircle size={14} />
             Scenario
           </button>
         </nav>
         <Clock />
         <div className="hdr-info">
-          <button className="icon-btn" aria-label="About this prototype" aria-expanded={infoOpen} onClick={() => setInfoOpen(!infoOpen)}>
+          <button className="icon-btn" aria-label="About this prototype" aria-expanded={infoOpen} onClick={() => setInfoOpen(!infoOpen)} data-popover-toggle="info">
             <Info size={16} />
           </button>
           {infoOpen && (
-            <div className="popover hdr-info-pop" role="dialog">
+            <div className="popover hdr-info-pop" role="dialog" ref={infoRef}>
               <div className="popover-title">About this prototype</div>
               <p>Prototype using simulated infrastructure telemetry. It is not connected to a real municipal network — all sensors, assets, costs and forecasts are demo simulation.</p>
               <p className="muted">

@@ -2,18 +2,12 @@ import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import type { Group } from 'three';
-import { SECTOR_BY_ID, BUILDINGS, PLINTH } from '../data/city';
+import { SECTOR_BY_ID, PLINTH } from '../data/city';
 import { live } from '../simulation/runtime';
 import { useTwinStore } from '../store/useTwinStore';
 import { FadeHtml } from './labels/FadeHtml';
 
 const B12 = SECTOR_BY_ID.get('B-12')!;
-
-function sectorSummary(id: string) {
-  const bs = BUILDINGS.filter((b) => b.sector === id);
-  const res = bs.reduce((a, b) => a + b.occupants, 0);
-  return { count: bs.length, residents: res };
-}
 
 /** Status label for the incident sector — colour/state follow the scenario. */
 function AlertLabel() {
@@ -46,24 +40,21 @@ function AlertLabel() {
 function HoverLabel() {
   const hoverSector = useTwinStore((s) => s.hoverSector);
   const xray = useTwinStore((s) => s.xray);
+  const hoveringBuilding = useTwinStore((s) => s.hover?.kind === 'building');
   const ref = useRef<Group>(null);
   const s = hoverSector ? SECTOR_BY_ID.get(hoverSector) : undefined;
-  const show = !!s && !xray && !(s.id === 'B-12' && live.sectorAlert > 0.3);
+  const show = !!s && !xray && !hoveringBuilding && !(s.id === 'B-12' && live.sectorAlert > 0.3);
 
   useFrame(() => {
     if (ref.current && s) ref.current.position.set(s.x - PLINTH / 2 + 0.5, 0.4, s.z - PLINTH / 2 + 0.5);
   });
 
-  const sum = s ? sectorSummary(s.id) : null;
   return (
     <group ref={ref}>
       <Html zIndexRange={[19, 19]} style={{ pointerEvents: 'none' }}>
-        {show && s && sum && (
+        {show && s && (
           <div className="sector-tag">
             <span className="sector-id mono">{s.id}</span>
-            <span className="sector-meta">
-              {sum.count} bldg · {s.kind === 'park' ? 'park' : s.kind === 'yard' ? 'utility' : s.kind === 'campus' ? 'campus' : `${sum.residents.toLocaleString('en-US')} res.`}
-            </span>
           </div>
         )}
       </Html>

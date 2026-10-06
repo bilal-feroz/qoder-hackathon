@@ -36,7 +36,6 @@ export function HoverTooltip() {
       {data && (
         <>
           <AssetCardBody data={data} compact />
-          <div className="hover-hint">Click to pin</div>
         </>
       )}
     </div>
