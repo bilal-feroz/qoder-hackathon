@@ -79,7 +79,7 @@ export function Header() {
       <div className="hdr-brand">
         <LogoMark />
         <div>
-          <div className="hdr-title">AI Infrastructure Guardian</div>
+          <div className="hdr-title">UnderGrid</div>
           <div className="hdr-tagline">The City That Heals Itself</div>
         </div>
       </div>

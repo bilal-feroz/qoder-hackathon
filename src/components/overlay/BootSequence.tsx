@@ -116,7 +116,7 @@ export function BootSequence() {
         </div>
       )}
       <div className={`intro-title ${boot === 'intro' ? 'is-on' : ''}`} aria-hidden={boot !== 'intro'}>
-        <div className="intro-name">AI Infrastructure Guardian</div>
+        <div className="intro-name">UnderGrid</div>
         <div className="intro-tag">The City That Heals Itself.</div>
         <div className="intro-place">
           {PLACE.district} · {PLACE.city}

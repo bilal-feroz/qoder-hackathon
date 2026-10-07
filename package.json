@@ -2,7 +2,7 @@
   "name": "ai-infrastructure-guardian",
   "private": true,
   "version": "1.0.0",
-  "description": "AI Infrastructure Guardian — an interactive, predictive digital twin of a city's hidden infrastructure.",
+  "description": "UnderGrid — an interactive, predictive digital twin of a city's hidden infrastructure.",
   "type": "module",
   "scripts": {
     "dev": "vite",

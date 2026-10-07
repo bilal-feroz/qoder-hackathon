@@ -1,30 +1,37 @@
-# P.E.K.A. — Predictive Emulator for Kinetic Assessments
+# UnderGrid
 
-A proactive digital twin for underground infrastructure — don't wait for the street to collapse to find out what's wrong beneath it.
+A 3D digital twin of a city's underground infrastructure — see which pipe is failing, and where, before the street breaks.
 
 ---
 
-## The Idea
+## The Problem
 
-**P.E.K.A.** is an active digital twin of a city's subsurface utility network. It doesn't just display live data — it constantly simulates future states of hidden assets (water mains, gas lines, sewage conduits) beneath the city streets.
+Under every city runs a hidden network of water mains, sewage lines, power cables, telecom ducts and district cooling pipes. Nobody can see it, so cities usually find out something is wrong only **after it breaks**: a main bursts, the road caves in, streets flood, and homes, schools and hospitals lose service. Fixing it after the fact is slow, disruptive and expensive.
 
-- **Predictive Emulator** — the enterprise-grade term for a digital twin that continuously simulates what happens next.
-- **Kinetic Assessments** — the engineering translation for evaluating physical motion, pressure dynamics, structural yields, and real-world impacts under the city streets.
+The warning signs usually show up days earlier — a small pressure drop, wetter soil, slightly warmer ground — but each one looks harmless on its own, so nobody connects them.
 
-Instead of reacting to catastrophic failures, P.E.K.A. detects degradation early, predicts the failure horizon, weighs the socio-economic blast radius, and orchestrates a repair plan — all before residents ever notice a problem.
+And even when someone suspects a problem, **finding it is hard**. Operators work from spreadsheets, 2D maps and raw sensor readings that don't show *which* pipe is failing or *where along it* the fault is. Crews end up digging exploratory holes, closing more road than needed and losing hours just locating the fault.
+
+## The Solution
+
+**UnderGrid** is a live 3D digital twin of the city and everything beneath it. It watches sensor data around the clock, connects weak signals before they turn into a failure, pinpoints the exact pipe and the spot on it, predicts when it will fail, weighs who would be affected, and hands crews a repair plan — all before residents notice anything.
+
+Because the twin is 3D, **the problem is visible at a glance**: the city turns see-through, the faulty pipe glows, the leak point is marked and the affected buildings light up. What takes hours of cross-checking maps and sensor data takes seconds.
+
+The result: the pipe is fixed before it bursts, and *the city never visibly breaks*. In the demo scenario, a ~AED 660K planned repair avoids ~AED 5.94M of damage.
 
 ---
 
 ## The 4-Stage Operational Narrative
 
-This is how the P.E.K.A. engine processes an underground scenario step-by-step:
+This is how UnderGrid processes an underground scenario step-by-step:
 
 ### 1. DETECT — Subsurface Anomaly Isolation
 
 The emulator constantly ingests live municipal telemetry. When a hidden asset deviates from its baseline, the system isolates the deviation.
 
 - **Physical Indicators:** Pressure dropping 2.7%, localized ground moisture spikes, micro-thermal anomalies.
-- **System Action:** P.E.K.A. bypasses surface-level blindspots, cross-references historical consumption maps, and issues an alert:
+- **System Action:** UnderGrid bypasses surface-level blindspots, cross-references historical consumption maps, and issues an alert:
 
   ```
   SUBSURFACE ANOMALY DETECTED // Confidence: 93%
@@ -43,7 +50,7 @@ The visualization cuts beneath the city's 3D grid, slicing through utility layer
 
 ### 3. PRIORITIZE — Socio-Economic Impact Weighting
 
-Before suggesting a physical response, P.E.K.A. weighs the downstream chaotic effects of the failure against the city's active infrastructure matrix. It calculates:
+Before suggesting a physical response, UnderGrid weighs the downstream chaotic effects of the failure against the city's active infrastructure matrix. It calculates:
 
 - **Critical Dependencies:** Proximity to operational hospitals, active school zones, and high-density residential hubs.
 - **Logistical Friction:** Municipal traffic flow impacts, required road closures, dispatch radius for specialized crews, and material procurement costs.
@@ -68,7 +75,7 @@ The system transitions from an analytical twin to an operational coordinator, ge
 
 ---
 
-# Demo app — AI Infrastructure Guardian *(The City That Heals Itself)*
+# Demo app — UnderGrid *(The City That Heals Itself)*
 
 An interactive, predictive **digital twin of a city's hidden infrastructure**, built with Three.js.
 It watches simulated sensor streams for water, electricity, telecom, sewage and district cooling,
