@@ -3,7 +3,7 @@ import { ArrowRight, Hand, MessageCircleQuestion, Play, ShieldCheck, Zap } from 
 import { ThinkingOrb } from 'thinking-orbs';
 import NavbarSectionTwo, { type MenuPanel, type NavItem } from '@/components/ui/navbar-section-2';
 import { RailToc, type RailTocItem } from '@/components/ui/rail-toc';
-import { PioneerMark } from '@/components/ui/PioneerMark';
+import { UnderGridMark } from '@/components/ui/UnderGridMark';
 import { AGENTS } from '@/agents/team';
 import { AD, MAP_CREDIT } from '@/data/abudhabi';
 import { COSTS, formatMoney } from '@/data/incident';
@@ -33,7 +33,7 @@ const PANELS: MenuPanel[] = [
     items: [
       { title: 'Spot', description: 'Sensors notice small changes under the street before anyone else.', href: '#how' },
       { title: 'Plan', description: 'Six AI agents compare the fixes and pick the safest one.', href: '#how' },
-      { title: 'Fix', description: 'The right crew drives over and fixes it. Pioneer checks it worked.', href: '#how' },
+      { title: 'Fix', description: 'The right crew drives over and fixes it. UnderGrid checks it worked.', href: '#how' },
     ],
   },
 ];
@@ -49,7 +49,7 @@ const TOC: RailTocItem[] = [
 const STEPS = [
   { n: '01', title: 'Spot', text: 'Sensors under the streets notice small changes before anyone else does.' },
   { n: '02', title: 'Plan', text: 'Six AI agents compare the fixes and pick the safest one.' },
-  { n: '03', title: 'Fix', text: 'The right crew drives over and fixes it. Pioneer checks that it worked.' },
+  { n: '03', title: 'Fix', text: 'The right crew drives over and fixes it. UnderGrid checks that it worked.' },
 ];
 
 const MODES = [
@@ -61,8 +61,8 @@ const MODES = [
 function Logo() {
   return (
     <span className="flex items-center gap-2.5">
-      <PioneerMark size={30} />
-      <span className="font-display text-[19px] font-medium tracking-[-0.01em]">Pioneer</span>
+      <UnderGridMark size={30} />
+      <span className="font-display text-[19px] font-medium tracking-[-0.01em]">UnderGrid</span>
     </span>
   );
 }
@@ -81,7 +81,7 @@ function Section({ id, title, lead, children }: { id: string; title: string; lea
 
 function Shot({ src, alt, caption }: { src: string; alt: string; caption?: string }) {
   return (
-    <figure className="overflow-hidden rounded-[22px] border border-border bg-panel shadow-[0_30px_70px_-40px_rgba(30,36,60,0.5)]">
+    <figure className="overflow-hidden rounded-[22px] border border-border bg-panel shadow-[0_30px_70px_-40px_rgba(0,0,0,0.85)]">
       <img src={src} alt={alt} loading="lazy" className="block h-auto w-full" />
       {caption && <figcaption className="border-t border-border px-5 py-3 text-sm text-muted-foreground">{caption}</figcaption>}
     </figure>
@@ -94,19 +94,19 @@ export function Landing() {
   const scroller = useRef<HTMLDivElement>(null);
 
   return (
-    <div ref={scroller} className="landing h-dvh overflow-y-auto bg-background text-foreground">
+    <div ref={scroller} className="landing h-dvh overflow-y-auto text-foreground">
       <NavbarSectionTwo
         logo={<Logo />}
-        logoLabel="Pioneer home"
+        logoLabel="UnderGrid home"
         items={NAV}
         panels={PANELS}
         cta={{ label: 'Open the twin', href: '#twin' }}
-        ctaClassName="bg-black hover:bg-zinc-800"
-        className="min-h-0 bg-background pb-0"
+        ctaClassName="bg-[linear-gradient(180deg,#6ee0f2,#3fbfd8)] text-[#041016] shadow-[0_0_0_1px_rgba(110,224,242,0.4),0_10px_30px_-10px_rgba(79,209,232,0.7)] hover:brightness-110"
+        className="min-h-0 bg-transparent pb-0 text-foreground"
       >
         <section className="relative z-10 mt-12 w-full max-w-[1080px] text-center lg:mt-20">
           <a href="#map" className="group mb-8 inline-flex items-center gap-2 rounded-full border border-border bg-panel/80 py-1 pl-1 pr-3 text-sm text-muted-foreground transition-colors hover:text-foreground">
-            <span className="rounded-full bg-foreground px-2.5 py-0.5 text-xs font-medium text-primary-foreground">Live demo</span>
+            <span className="rounded-full border border-accent/30 bg-accent-soft px-2.5 py-0.5 text-xs font-medium text-accent">Live demo</span>
             Real Abu Dhabi streets
             <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
           </a>
@@ -119,7 +119,7 @@ export function Landing() {
             AI agents watch the pipes under the streets, plan the repair and send the right crew. You set the limits.
           </p>
           <div className="mt-9 flex flex-wrap justify-center gap-3">
-            <a href="#twin" className={`${pill} bg-foreground text-primary-foreground hover:bg-zinc-800`}>
+            <a href="#twin" className={`${pill} bg-[linear-gradient(180deg,#6ee0f2,#3fbfd8)] text-[#041016] shadow-[0_0_0_1px_rgba(110,224,242,0.4),0_10px_30px_-10px_rgba(79,209,232,0.7)] hover:brightness-110`}>
               Open the live twin
               <ArrowRight className="size-4" aria-hidden="true" />
             </a>
@@ -128,8 +128,8 @@ export function Landing() {
               Watch the 1-minute demo
             </a>
           </div>
-          <figure className="relative mx-auto mt-14 overflow-hidden rounded-t-[26px] border border-b-0 border-border bg-panel shadow-[0_50px_100px_-50px_rgba(30,36,60,0.55)]">
-            <img src="/landing/twin.jpg" alt="Pioneer's 3D twin of downtown Abu Dhabi: sensors on the left, the city in the middle, the AI agents on the right" width={1600} height={1000} className="block h-auto w-full" />
+          <figure className="relative mx-auto mt-14 overflow-hidden rounded-t-[26px] border border-b-0 border-border bg-panel shadow-[0_50px_100px_-50px_rgba(0,0,0,0.9),0_0_80px_-30px_rgba(79,209,232,0.25)]">
+            <img src="/landing/twin.jpg" alt="UnderGrid's 3D twin of downtown Abu Dhabi: sensors on the left, the city in the middle, the AI agents on the right" width={1600} height={1000} className="block h-auto w-full" />
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-background via-background/70 to-transparent" />
           </figure>
         </section>
@@ -162,7 +162,7 @@ export function Landing() {
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {AGENTS.map((a) => (
                 <article key={a.id} className="flex items-center gap-4 rounded-[18px] border border-border bg-panel px-5 py-4">
-                  <ThinkingOrb state={a.orb} size={32} theme="light" aria-hidden="true" />
+                  <ThinkingOrb state={a.orb} size={32} theme="dark" aria-hidden="true" />
                   <div>
                     <h3 className="text-[16px] font-semibold">{a.name}</h3>
                     <p className="text-sm text-muted-foreground">{a.job}</p>
@@ -198,7 +198,7 @@ export function Landing() {
             <div className="grid gap-4 md:grid-cols-3">
               {MODES.map(({ icon: Icon, title, text }) => (
                 <article key={title} className="rounded-[22px] border border-border bg-panel p-6">
-                  <Icon className="size-5" aria-hidden="true" />
+                  <Icon className="size-5 text-accent" aria-hidden="true" />
                   <h3 className="mt-6 text-[18px] font-semibold">{title}</h3>
                   <p className="mt-1.5 leading-relaxed text-muted-foreground">{text}</p>
                 </article>
@@ -207,7 +207,7 @@ export function Landing() {
             <div className="mt-6 grid items-start gap-4 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
               <Shot src="/landing/approval.jpg" alt="The agents pausing for approval because the repair is over the spend limit" caption="Over your limit? The agents stop and ask." />
               <article className="rounded-[22px] border border-border bg-panel p-6">
-                <MessageCircleQuestion className="size-5" aria-hidden="true" />
+                <MessageCircleQuestion className="size-5 text-accent" aria-hidden="true" />
                 <h3 className="mt-6 text-[18px] font-semibold">Ask them why</h3>
                 <p className="mt-1.5 leading-relaxed text-muted-foreground">Type a question like “Why Crew 07?” and get a short answer, in English or Arabic, built only from what the agents actually did.</p>
                 <p className="mt-4 text-sm text-muted-foreground">Answers by Qwen. It can explain, never approve.</p>
@@ -215,7 +215,7 @@ export function Landing() {
             </div>
           </Section>
 
-          <section id="start" aria-labelledby="start-title" className="scroll-mt-10 overflow-hidden rounded-[28px] bg-instrument px-8 py-14 text-instrument-ink md:px-14">
+          <section id="start" aria-labelledby="start-title" className="scroll-mt-10 overflow-hidden rounded-[28px] border border-accent/25 bg-[radial-gradient(120%_140%_at_0%_0%,rgba(79,209,232,0.16),transparent_55%),var(--instrument)] px-8 py-14 text-instrument-ink md:px-14">
             <h2 id="start-title" className="font-display max-w-lg text-[36px] font-medium leading-[1.05] tracking-[-0.02em] md:text-[48px]">
               See it fix a leak in one minute
             </h2>
@@ -223,7 +223,7 @@ export function Landing() {
               A pipe under Khalifa Street starts to fail. Fixing it early costs {formatMoney(COSTS.preventive)}. Waiting costs {formatMoney(COSTS.failure)}.
             </p>
             <div className="mt-9 flex flex-wrap gap-3">
-              <a href="#demo" className={`${pill} bg-instrument-ink text-instrument hover:bg-white`}>
+              <a href="#demo" className={`${pill} bg-[linear-gradient(180deg,#6ee0f2,#3fbfd8)] text-[#041016] shadow-[0_0_0_1px_rgba(110,224,242,0.4),0_10px_30px_-10px_rgba(79,209,232,0.7)] hover:brightness-110`}>
                 <Play className="size-4" aria-hidden="true" />
                 Watch the demo
               </a>
@@ -239,8 +239,8 @@ export function Landing() {
       <footer className="border-t border-border px-6 py-8">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
           <span className="flex items-center gap-2 text-foreground">
-            <PioneerMark size={18} />
-            Pioneer
+            <UnderGridMark size={18} />
+            UnderGrid
           </span>
           <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer" className="hover:text-foreground">
             {MAP_CREDIT}

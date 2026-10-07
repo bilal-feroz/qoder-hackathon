@@ -3,6 +3,35 @@
  * own reset. Every selector is wrapped in :where() so it has zero specificity and any utility
  * class (text-*, mx-auto, …) still wins regardless of load order.
  */
+/* The landing page's palette: deep blue, scoped to .landing so the twin keeps its own.
+ * Tailwind's semantic colours (bg-background, bg-panel, text-muted-foreground…) read these. */
+.landing {
+  --bg-0: #061024;
+  --bg-1: #0a1a36;
+  --panel-solid: #0f2347;
+  --card: rgba(19, 41, 80, 0.72);
+  --line: rgba(130, 176, 236, 0.14);
+  --line-2: rgba(130, 176, 236, 0.22);
+  --line-3: rgba(130, 176, 236, 0.36);
+  --text-0: #f4f8ff;
+  --text-1: #c3d2e8;
+  --text-2: #8fa3c2;
+  --instrument: #0c2148;
+  --instrument-row: #163266;
+  --instrument-ink: #f4f8ff;
+  --instrument-ink-2: #a9bcdb;
+  --background: var(--bg-1);
+  --foreground: var(--text-0);
+  background-color: var(--bg-1);
+  /* light from above: a cyan glow behind the headline, a blue one to the right */
+  background-image:
+    radial-gradient(1100px 620px at 50% -12%, rgba(79, 209, 232, 0.22), transparent 70%),
+    radial-gradient(900px 520px at 88% 18%, rgba(76, 141, 255, 0.16), transparent 70%);
+  background-repeat: no-repeat;
+  background-attachment: local;
+  color: var(--text-0);
+}
+
 :where(.landing) {
   font-size: 15px;
   line-height: 1.5;

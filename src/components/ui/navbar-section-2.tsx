@@ -188,7 +188,7 @@ function DropdownPanel({ panel, onPick }: { panel: MenuPanel; onPick: () => void
   if (panel.layout === "feature" && panel.items.length >= 4) {
     const [a, b, c, d] = panel.items;
     return (
-      <div className="grid grid-cols-[1.2fr_1.2fr_1fr] gap-4 bg-black p-4">
+      <div className="grid grid-cols-[1.2fr_1.2fr_1fr] gap-4 bg-[var(--panel-solid)] p-4">
         <PanelCard item={a} onPick={onPick} />
         <PanelCard item={b} onPick={onPick} />
         <div className="flex flex-col gap-2">
@@ -200,7 +200,7 @@ function DropdownPanel({ panel, onPick }: { panel: MenuPanel; onPick: () => void
   }
 
   return (
-    <div className="grid grid-cols-3 gap-4 bg-black p-4">
+    <div className="grid grid-cols-3 gap-4 bg-[var(--panel-solid)] p-4">
       {panel.items.map((item) => (
         <PanelCard key={item.title} item={item} onPick={onPick} />
       ))}
@@ -271,15 +271,15 @@ export default function NavbarTwo({
   return (
     <div className={cn("relative flex min-h-[720px] w-full flex-col items-center overflow-hidden bg-white px-6 pb-6 pt-0 font-sans text-zinc-900 transition-colors duration-300", className)}>
       <div className="relative z-30 hidden h-12 w-full max-w-7xl select-none items-center justify-between lg:flex">
-        <a href={logoHref} aria-label={logoLabel} className="flex items-center text-black">
+        <a href={logoHref} aria-label={logoLabel} className="flex items-center text-foreground">
           {logo}
         </a>
 
         <div ref={barRef} className="absolute left-1/2 top-0 hidden w-[700px] -translate-x-1/2 lg:block" style={{ filter: "drop-shadow(0 12px 20px rgba(0, 0, 0, 0.18))" }}>
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" className="pointer-events-none absolute -left-[18px] top-0 z-10 text-black" aria-hidden="true"><path d="M 20 20 L 20 0 L 0 0 C 11.046 0 20 11.046 20 20 Z" fill="currentColor" /></svg>
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" className="pointer-events-none absolute -right-[18px] top-0 z-10 text-black" aria-hidden="true"><path d="M 0 0 L 20 0 C 8.954 0 0 8.954 0 20 Z" fill="currentColor" /></svg>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" className="pointer-events-none absolute -left-[18px] top-0 z-10 text-[var(--panel-solid)]" aria-hidden="true"><path d="M 20 20 L 20 0 L 0 0 C 11.046 0 20 11.046 20 20 Z" fill="currentColor" /></svg>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" className="pointer-events-none absolute -right-[18px] top-0 z-10 text-[var(--panel-solid)]" aria-hidden="true"><path d="M 0 0 L 20 0 C 8.954 0 0 8.954 0 20 Z" fill="currentColor" /></svg>
 
-          <motion.div animate={{ height: activePanel ? 260 : 48 }} transition={spring.slow} className="relative flex w-full flex-col justify-start overflow-hidden bg-black" style={{ borderBottomLeftRadius: "16px", borderBottomRightRadius: "16px" }}>
+          <motion.div animate={{ height: activePanel ? 260 : 48 }} transition={spring.slow} className="relative flex w-full flex-col justify-start overflow-hidden bg-[var(--panel-solid)]" style={{ borderBottomLeftRadius: "16px", borderBottomRightRadius: "16px" }}>
             <div className="z-20 flex h-12 items-center justify-center px-6">
               <nav className="flex w-full items-center justify-center gap-2 text-xs text-zinc-400" aria-label="Main" onMouseLeave={() => setHovered(null)}>
                 {items.map((item) =>
@@ -326,7 +326,7 @@ export default function NavbarTwo({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8, transition: spring.moderate.exit }}
                   transition={spring.moderate}
-                  className="overflow-hidden border-t border-zinc-900 bg-black"
+                  className="overflow-hidden border-t border-white/5 bg-[var(--panel-solid)]"
                 >
                   <DropdownPanel panel={activePanel} onPick={close} />
                 </motion.div>
@@ -342,7 +342,7 @@ export default function NavbarTwo({
       </div>
 
       <div className="relative z-30 flex h-14 w-full items-center justify-between lg:hidden">
-        <a href={logoHref} aria-label={logoLabel} className="text-black">
+        <a href={logoHref} aria-label={logoLabel} className="text-foreground">
           {logo}
         </a>
         <div className="flex items-center gap-2">
@@ -355,7 +355,7 @@ export default function NavbarTwo({
             onClick={() => setMobileOpen((open) => !open)}
             aria-expanded={mobileOpen}
             aria-label={mobileOpen ? "Close menu" : "Open menu"}
-            className="grid size-9 place-items-center rounded-lg border border-zinc-200 text-zinc-900"
+            className="grid size-9 place-items-center rounded-lg border border-border text-foreground"
           >
             {mobileOpen ? <X className="size-4" /> : <Menu className="size-4" />}
           </button>
@@ -364,7 +364,7 @@ export default function NavbarTwo({
 
       <AnimatePresence>
         {mobileOpen && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0, transition: spring.moderate.exit }} transition={spring.moderate} className="relative z-20 w-full overflow-hidden rounded-xl bg-black text-white shadow-xl lg:hidden">
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0, transition: spring.moderate.exit }} transition={spring.moderate} className="relative z-20 w-full overflow-hidden rounded-xl border border-border bg-[var(--panel-solid)] text-white shadow-xl lg:hidden">
             <div className="grid gap-1 p-4">
               {items.map((item) => {
                 const panel = item.panelId ? getPanel(item.panelId) : null;

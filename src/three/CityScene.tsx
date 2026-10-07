@@ -8,6 +8,7 @@ import { Ground, Diorama } from './Ground';
 import { AbuDhabiBuildings } from './AbuDhabiBuildings';
 import { Mosques } from './Mosques';
 import { Palms } from './Palms';
+import { StreetLights } from './StreetLights';
 import { MapLabels } from './MapLabels';
 import { Sea } from './Sea';
 import { AbuDhabiTraffic } from './AbuDhabiTraffic';
@@ -104,6 +105,7 @@ export function CityScene({ quality }: { quality: 'high' | 'low' }) {
         <AbuDhabiBuildings />
         <Mosques />
         <Palms />
+        <StreetLights />
         <MapLabels />
         <AbuDhabiTraffic />
         <Cutaway />

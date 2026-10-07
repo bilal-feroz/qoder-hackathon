@@ -6,7 +6,7 @@ import { ThinkingLine } from './ThinkingLine';
 const SUGGESTIONS = ['Why this fix?', 'Why Crew 07?', 'Is the hospital OK?'];
 
 /** Ask the agents about what they did. Answers come from Qwen using only the run's facts. */
-export function AskPioneer({ facts }: { facts: () => ReturnType<typeof factsNow> }) {
+export function AskUnderGrid({ facts }: { facts: () => ReturnType<typeof factsNow> }) {
   const [q, setQ] = useState('');
   const [busy, setBusy] = useState(false);
   const [reply, setReply] = useState<{ q: string; answer: string; by: 'qwen' | 'built-in' } | null>(null);
@@ -53,7 +53,7 @@ export function AskPioneer({ facts }: { facts: () => ReturnType<typeof factsNow>
           ))}
         </div>
       )}
-      {busy && <ThinkingLine text="Pioneer is thinking…" live />}
+      {busy && <ThinkingLine text="UnderGrid is thinking…" live />}
       {reply && !busy && (
         <div className="ask-reply" aria-live="polite">
           <p className="ask-q">{reply.q}</p>

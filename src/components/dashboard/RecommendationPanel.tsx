@@ -158,7 +158,7 @@ export function RecommendationPanel() {
   return (
     <div className="rail-inner">
       <header className="rail-head">
-        <span className="rail-title">What Pioneer suggests</span>
+        <span className="rail-title">What UnderGrid suggests</span>
       </header>
       <div className="rec-scroll">
         {key === 'monitor' && <Monitoring />}

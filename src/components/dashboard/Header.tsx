@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Info, Layers, LayoutGrid, PlayCircle } from 'lucide-react';
 import { useTwinStore } from '../../store/useTwinStore';
 import { useDismiss } from '../../hooks/useDismiss';
-import { PioneerMark } from '../ui/PioneerMark';
+import { UnderGridMark } from '../ui/UnderGridMark';
 import { MAP_CREDIT } from '../../data/abudhabi';
 import { PLACE } from '../../data/geo';
 
@@ -73,10 +73,10 @@ export function Header() {
 
   return (
     <header className="hdr panel-enter" style={{ ['--enter-delay' as string]: '0ms' }}>
-      <a className="hdr-brand" href="#" aria-label="Pioneer home">
-        <PioneerMark size={30} className="pioneer-mark" />
+      <a className="hdr-brand" href="#" aria-label="UnderGrid home">
+        <UnderGridMark size={30} className="undergrid-mark" />
         <div>
-          <div className="hdr-title">Pioneer</div>
+          <div className="hdr-title">UnderGrid</div>
           <div className="hdr-tagline">The city that fixes itself first</div>
         </div>
       </a>
@@ -108,7 +108,7 @@ export function Header() {
               <div className="popover-title">About this demo</div>
               <p>Streets, buildings and the Corniche are real downtown Abu Dhabi from OpenStreetMap. The pipes, sensors, crews and the leak are made up for the demo. Nothing is connected to a real network.</p>
               <p className="muted">
-                Keys: <kbd>Space</kbd> play or pause · <kbd>X</kbd> see underground · <kbd>E</kbd> separate the layers · <kbd>R</kbd> start over
+                Keys: <kbd>Space</kbd> play or pause · <kbd>X</kbd> X-ray · <kbd>E</kbd> exploded view · <kbd>R</kbd> start over
               </p>
               <p className="muted">{MAP_CREDIT}</p>
             </div>

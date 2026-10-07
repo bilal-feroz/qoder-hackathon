@@ -139,12 +139,13 @@ function RouteRibbon() {
       new ShaderMaterial({
         transparent: true,
         depthWrite: false,
+        blending: AdditiveBlending,
         uniforms: {
           uTime: G.uTime,
           uProgress: { value: 0 },
           uAmount: { value: 0 },
           uTotal: { value: ROUTE.total },
-          uColor: { value: new Color('#f08a24') },
+          uColor: { value: new Color('#f2f6ff').multiplyScalar(1.9) },
         },
         vertexShader: /* glsl */ `
           varying vec2 vUv;
@@ -166,9 +167,8 @@ function RouteRibbon() {
             float dotM = 1.0 - smoothstep(0.17, 0.24, length(q));
             float core = 1.0 - smoothstep(0.0, 0.08, abs(vUv.y - 0.5));
             float headGlow = exp(-(head - s) * 1.2);
-            float a = clamp(dotM * 0.95 + core * 0.35 + headGlow * 0.6, 0.0, 1.0) * uAmount;
-            if (a < 0.01) discard;
-            gl_FragColor = vec4(uColor * (1.0 + headGlow * 0.6), a);
+            float a = (dotM * 0.9 + core * 0.12 + headGlow * 0.8) * uAmount;
+            gl_FragColor = vec4(uColor * a, 1.0);
           }
         `,
       }),

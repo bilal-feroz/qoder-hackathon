@@ -41,8 +41,8 @@ export function wall(points: [number, number][], y0: number, y1: number) {
  */
 export function Diorama() {
   const soil = useMemo(() => createSoilMaterial(), []);
-  const bed = useMemo(() => createPropMaterial({ color: '#b7a487', roughness: 1 }), []);
-  const water = useMemo(() => createPropMaterial({ color: '#1d5d6b', roughness: 0.2, opacity: 0.74 }), []);
+  const bed = useMemo(() => createPropMaterial({ color: '#0d1114', roughness: 1 }), []);
+  const water = useMemo(() => createPropMaterial({ color: '#0e4652', roughness: 0.2, metalness: 0.2, opacity: 0.7, emissive: '#06303a', emissiveIntensity: 0.6 }), []);
   const B = DIORAMA.bottom;
   const { faces, waterFaces } = useMemo(() => {
     const out: BufferGeometry[] = [];

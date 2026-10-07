@@ -1,10 +1,30 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Check, CheckCircle2, Loader, OctagonAlert, Pause, Play, Radar, RotateCcw, SkipForward, TriangleAlert, Wrench, X, Zap } from 'lucide-react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { motion, useMotionValue, useMotionValueEvent, useReducedMotion, useSpring, useTransform } from 'motion/react';
+import { Check, CheckCircle2, Loader, OctagonAlert, Pause, Play, Radar, RotateCcw, SkipForward, TriangleAlert, Wrench, X } from 'lucide-react';
 import { useTwinStore } from '../../store/useTwinStore';
 import { useDismiss } from '../../hooks/useDismiss';
 import { T } from '../../simulation/timeline';
 import { runtime } from '../../simulation/runtime';
 import { INCIDENT } from '../../data/incident';
+import { useRimMask } from '../ui/ai-lights/useAiLights';
+import { EVEN_STOPS } from '../ui/ai-lights/mask';
+import { RimGlow } from '../ui/ai-lights/RimGlow';
+import '../../styles/ai-lights.css';
+
+/** The idle call to action: a minimal pill with a constant light-blue AI-lights halo round its rim. */
+function RunButton({ onClick }: { onClick: () => void }) {
+  const ref = useRef<HTMLButtonElement>(null);
+  const layers = useRimMask(ref, { stops: EVEN_STOPS });
+  return (
+    <button ref={ref} className="run-btn ai-lights is-constant" onClick={onClick}>
+      <RimGlow layers={layers} />
+      <span className="run-face">
+        <Play size={14} className="run-icon" fill="currentColor" aria-hidden />
+        <span className="run-title">Play the demo</span>
+      </span>
+    </button>
+  );
+}
 
 const TONE_ICON = {
   ok: CheckCircle2,
@@ -33,11 +53,99 @@ export function ScenarioCaption() {
 }
 
 const STAGES = [
-  { label: 'Spot', from: T.anomaly, to: T.leak },
+  { label: 'Detect', from: T.anomaly, to: T.leak },
   { label: 'Predict', from: T.leak, to: T.impact },
-  { label: 'Impact', from: T.impact, to: T.plan },
+  { label: 'Prioritize', from: T.impact, to: T.plan },
   { label: 'Plan', from: T.plan, to: T.resolved },
 ];
+
+/* ---------------- the progress rail ----------------
+   The landing page's rail (components/ui/rail-toc) laid along the playback bar: a dashed track, the
+   travelled part drawn solid, a node under each stage, and the same plane on the same spring. */
+
+const TRAVEL_SPRING = { stiffness: 140, damping: 26, mass: 0.6 };
+const PLANE = 'M12 2 20.5 21 12 17.5 3.5 21z';
+const PLANE_HOLE = 5;
+const RAIL_Y = 10;
+const node = (i: number) => (i + 0.5) / STAGES.length;
+
+/** Where on the rail (0..1) the plane sits at scenario time t: on a stage's node as it begins, gliding to the next. */
+function railAt(t: number) {
+  if (t <= STAGES[0].from) return node(0) * Math.max(0, t / STAGES[0].from);
+  for (let i = 0; i < STAGES.length; i++) {
+    const st = STAGES[i];
+    if (t < st.to) {
+      const next = i + 1 < STAGES.length ? node(i + 1) : 1;
+      return node(i) + (next - node(i)) * ((t - st.from) / (st.to - st.from));
+    }
+  }
+  return 1;
+}
+
+function ProgressRail() {
+  const ref = useRef<HTMLDivElement>(null);
+  const holeRef = useRef<SVGCircleElement>(null);
+  const [w, setW] = useState(0);
+  const [reached, setReached] = useState(0);
+  const reduce = useReducedMotion();
+  const target = useMotionValue(railAt(runtime.t));
+  const travel = useSpring(target, TRAVEL_SPRING);
+  const at = reduce ? target : travel;
+  const x = useTransform(at, (v) => v * w);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => setW(el.offsetWidth);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // follow the clock every frame; the spring smooths seeks and skips
+  useEffect(() => {
+    let raf = 0;
+    const loop = () => {
+      target.set(railAt(runtime.t));
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [target]);
+
+  useMotionValueEvent(at, 'change', (v) => {
+    holeRef.current?.setAttribute('cx', `${v * w}`);
+    setReached(STAGES.filter((_, i) => node(i) <= v + 0.002).length);
+  });
+
+  return (
+    <div className="rail-track" ref={ref} aria-hidden>
+      {w > 0 && (
+        <svg className="rail-svg" width={w} height={RAIL_Y * 2}>
+          <mask id="rail-hole" maskUnits="userSpaceOnUse" x={-8} y={-8} width={w + 16} height={RAIL_Y * 2 + 16}>
+            <rect x={-8} y={-8} width={w + 16} height={RAIL_Y * 2 + 16} fill="white" />
+            <circle ref={holeRef} cx={at.get() * w} cy={RAIL_Y} r={PLANE_HOLE} fill="black" />
+          </mask>
+          <g mask="url(#rail-hole)">
+            <line x1={0} y1={RAIL_Y} x2={w} y2={RAIL_Y} className="rail-dash" strokeDasharray="2 5" />
+            <motion.line x1={0} y1={RAIL_Y} x2={w} y2={RAIL_Y} className="rail-fill" style={{ pathLength: at }} />
+            {STAGES.map((st, i) => (
+              <circle key={st.label} cx={node(i) * w} cy={RAIL_Y} r={i < reached ? 3 : 3.25} className={`rail-node ${i < reached ? 'is-reached' : ''}`} />
+            ))}
+          </g>
+        </svg>
+      )}
+      {w > 0 && (
+        <motion.div className="rail-plane" style={{ x, y: RAIL_Y, rotate: 90 }}>
+          <svg viewBox="0 0 24 24" width={16} height={16}>
+            <path d={PLANE} fill="currentColor" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+          </svg>
+        </motion.div>
+      )}
+    </div>
+  );
+}
 
 /** Bottom-centre: one strong "run" button, then a playback bar that doubles as the AI pipeline. */
 export function ScenarioTransport() {
@@ -50,29 +158,11 @@ export function ScenarioTransport() {
   const t = useTwinStore((s) => s.snap.t);
   const exploded = useTwinStore((s) => s.exploded);
   const trackRef = useRef<HTMLDivElement>(null);
-  const fillRef = useRef<HTMLDivElement>(null);
-
-  // smooth progress independent of the 12 Hz snapshot
-  useEffect(() => {
-    let raf = 0;
-    const loop = () => {
-      if (fillRef.current) fillRef.current.style.width = `${(runtime.t / T.end) * 100}%`;
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-  }, []);
-
   if (status === 'idle') {
     if (exploded) return null;
     return (
       <div className="transport is-idle">
-        <button className="run-btn" onClick={run}>
-          <span className="run-icon">
-            <Zap size={18} />
-          </span>
-          <span className="run-title">Play the demo</span>
-        </button>
+        <RunButton onClick={run} />
         <button className="link-btn skip-link" onClick={skip}>
           Skip to the problem
           <SkipForward size={13} />
@@ -99,9 +189,7 @@ export function ScenarioTransport() {
         <SkipForward size={15} />
       </button>
       <div className="track" ref={trackRef} onClick={onSeek} role="slider" aria-label="Scenario timeline" aria-valuemin={0} aria-valuemax={T.end} aria-valuenow={Math.round(t)} tabIndex={0}>
-        <div className="track-line">
-          <div className="track-fill" ref={fillRef} />
-        </div>
+        <ProgressRail />
         <div className="track-stages">
           {STAGES.map((st) => {
             const state = t >= st.to ? 'done' : t >= st.from ? 'active' : 'pending';

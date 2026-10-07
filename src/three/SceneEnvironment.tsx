@@ -36,7 +36,7 @@ function GridFloor() {
       new ShaderMaterial({
         transparent: true,
         depthWrite: false,
-        uniforms: { uExploded: G.uExploded, uColor: { value: new Color('#2f3758') } },
+        uniforms: { uExploded: G.uExploded, uColor: { value: new Color('#5f8db8') } },
         vertexShader: /* glsl */ `
           varying vec2 vXZ;
           uniform float uExploded;
@@ -136,7 +136,7 @@ export function SceneEnvironment({ shadowSize = 4096 }: { shadowSize?: number })
       <SkyDome />
       <GridFloor />
       {/* cool sky dome above, warm bounce from the ground */}
-      <hemisphereLight args={['#dfe6f3', '#6b5a48', 0.95]} />
+      <hemisphereLight args={['#8d9dbd', '#2a2219', 0.5]} />
       {/* low golden sun: long shadows across the blocks */}
       <directionalLight
         ref={keyRef}

@@ -8,9 +8,9 @@ import tailwindcss from '@tailwindcss/vite';
  * Model Studio) answers from the run's facts only; it can explain decisions but never make
  * or change them. The key stays in .env.local on the server and is never sent to the browser.
  */
-function askPioneer(env: Record<string, string>): Plugin {
+function askUnderGrid(env: Record<string, string>): Plugin {
   const SYSTEM = [
-    "You are Pioneer, a team of six AI agents (Watch, Diagnose, Plan, Patch, Dispatch, Verify) that look after the underground pipes and cables of downtown Abu Dhabi.",
+    "You are UnderGrid, a team of six AI agents (Watch, Diagnose, Plan, Patch, Dispatch, Verify) that look after the underground pipes and cables of downtown Abu Dhabi.",
     'Answer the operator in plain, friendly words, at most 3 short sentences, in the language named in the request.',
     'Use ONLY the FACTS JSON. Never invent numbers, names, places or actions. Only say something happened if it is in facts.done.',
     "If the facts don't answer the question, say you don't know yet.",
@@ -64,14 +64,14 @@ function askPioneer(env: Record<string, string>): Plugin {
   };
 
   return {
-    name: 'pioneer-ask',
+    name: 'undergrid-ask',
     configureServer: (server) => void server.middlewares.use(handler),
     configurePreviewServer: (server) => void server.middlewares.use(handler),
   };
 }
 
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), tailwindcss(), askPioneer(loadEnv(mode, process.cwd(), ''))],
+  plugins: [react(), tailwindcss(), askUnderGrid(loadEnv(mode, process.cwd(), ''))],
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
   server: { port: 5173, open: false },
   build: {

@@ -1,13 +1,13 @@
-# Pioneer city twin (Vite + React + three.js)
+# UnderGrid city twin (Vite + React + three.js)
 
 - Dev: `npm run dev` (http://localhost:5173) · Types: `npm run typecheck` · Build: `npm run build`
 - Routes (hash): `/` landing page, `/#twin` the 3D twin, `/#demo` the twin with the story auto-playing (`src/app/Root.tsx`).
-- UI copy rule: plain words for non-experts; no all-caps labels. Pioneer tokens live in `src/styles/tokens.css`, overrides in `src/styles/pioneer.css`, agents panel styles in `src/styles/agents.css`, maps in `src/styles/geo.css`.
+- UI copy rule: plain words for non-experts; no all-caps labels. UnderGrid tokens live in `src/styles/tokens.css`, overrides in `src/styles/undergrid.css`, agents panel styles in `src/styles/agents.css`, maps in `src/styles/geo.css`.
 
 ## Tailwind + shadcn (landing page only)
 
 - Tailwind v4 via `@tailwindcss/vite`; entry `src/styles/tailwind.css`. No preflight (the twin keeps its own reset), utilities unlayered, and `source(none)` + explicit `@source` so only `src/components/ui` and `src/components/landing` are scanned. Keep twin class names out of those folders' Tailwind namespace.
-- shadcn semantic colours (`bg-background`, `text-muted-foreground`, …) map onto Pioneer tokens in `tailwind.css`; don't add a second palette. Pioneer radius tokens are `--radius-panel/card/chip` (renamed so Tailwind's `rounded-lg` keeps its own scale).
+- shadcn semantic colours (`bg-background`, `text-muted-foreground`, …) map onto UnderGrid tokens in `tailwind.css`; don't add a second palette. UnderGrid radius tokens are `--radius-panel/card/chip` (renamed so Tailwind's `rounded-lg` keeps its own scale).
 - `components.json` is set up (alias `@/` → `src/`). The shadcn CLI ran out of memory on the dev machine and tried to install an npm package literally named `cn`; registry items were installed by hand from their registry JSON instead (`rail-toc` from swamimalode07/rare-ui, `springs` from Fluid Functionalism). Check what a registry item installs before running `add`.
 - Motion tokens: `@/lib/springs` (fast / moderate / slow). The app root is wrapped in `MotionConfig reducedMotion="user"`.
 - The landing scroll container is `.landing` (body never scrolls); scoped preflight in `src/components/landing/landing.css` uses `:where()` so utilities always win.

@@ -104,7 +104,7 @@ export function captionAt(t: number, active: boolean): Caption {
 /** Markers shown on the scenario progress bar. */
 export const TIMELINE_MARKERS: { t: number; label: string }[] = [
   { t: T.anomaly, label: 'Change' },
-  { t: T.pattern, label: 'Spot' },
+  { t: T.pattern, label: 'Detect' },
   { t: T.leak, label: 'Leak' },
   { t: T.predict, label: 'Predict' },
   { t: T.impact, label: 'Impact' },

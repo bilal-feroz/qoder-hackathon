@@ -8,8 +8,10 @@
 
 @source '../components/ui';
 @source '../components/landing';
+@source '../components/evilcharts';
+@source '../components/agents';
 
-/* shadcn's semantic colours, mapped onto Pioneer's tokens (tokens.css): one palette, not two */
+/* shadcn's semantic colours, mapped onto the twin's dark tokens (tokens.css): one palette, not two */
 @theme inline {
   --color-background: var(--bg-1);
   --color-foreground: var(--text-0);
@@ -19,7 +21,7 @@
   --color-border: var(--line-2);
   --color-ring: var(--line-3);
   --color-primary: var(--text-0);
-  --color-primary-foreground: var(--instrument-ink);
+  --color-primary-foreground: var(--bg-0);
   --color-panel: var(--panel-solid);
   --color-instrument: var(--instrument);
   --color-instrument-row: var(--instrument-row);
@@ -29,6 +31,8 @@
   --color-dusk-2: var(--dusk-2);
   --color-dusk-3: var(--dusk-3);
   --color-amber: var(--amber);
+  --color-accent: var(--cyan);
+  --color-accent-soft: var(--cyan-soft);
   --color-emerald: var(--emerald);
   --font-display: var(--font-display);
 }

@@ -46,7 +46,7 @@ export function AutonomySwitch() {
 
   return (
     <div className="autonomy">
-      <div className="t-tabs" role="tablist" aria-label="How much the agents can do alone">
+      <div className="t-tabs" role="tablist" aria-label="How much the agents can do alone" title={current.hint}>
         <span className="t-tabs-pill" aria-hidden="true" ref={pillRef} />
         {OPTIONS.map((o) => (
           <button
@@ -63,7 +63,6 @@ export function AutonomySwitch() {
           </button>
         ))}
       </div>
-      <p className="autonomy-hint">{current.hint}</p>
       {policy.autonomy === 'limits' && (
         <div className="limits" role="group" aria-label="Spending limit">
           <span>Spend up to</span>

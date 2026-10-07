@@ -68,9 +68,9 @@ The system transitions from an analytical twin to an operational coordinator, ge
 
 ---
 
-# Demo app — Pioneer *(The city that fixes itself first)*
+# Demo app — UnderGrid *(The city that fixes itself first)*
 
-Pioneer is a 3D twin of downtown Abu Dhabi with a team of AI agents that look after the pipes and cables under the streets.
+UnderGrid is a 3D twin of downtown Abu Dhabi with a team of AI agents that look after the pipes and cables under the streets.
 They spot a problem early, pick the safest fix, send the right crew and check the result. You decide how much they can do alone.
 
 **Spot → Plan → Fix → Check**
@@ -118,7 +118,7 @@ npm run typecheck  # TypeScript only
 
 | Area | Purpose |
 | --- | --- |
-| **Landing page** | What Pioneer does in one screen, how it works, the agents, the real map, safety, and a link into the twin. |
+| **Landing page** | What UnderGrid does in one screen, how it works, the agents, the real map, safety, and a link into the twin. |
 | **Opening** | A map zoom from the UAE to Abu Dhabi Island to the Al Danah streets, handing over to the 3D twin on the same view (click or any key skips). |
 | **Center — 3D twin** | Real downtown Abu Dhabi: ~500 buildings at their real heights, the Corniche and the Gulf, mosques, parks, ~1,300 palms, everyday traffic on the real roads, and five utility networks laid under the real streets. |
 | **Left — Sensors** | Pressure, moisture, temperature and network health, the *why* panel during an alert, and the location card with Abu Dhabi time (GST). |
@@ -137,7 +137,7 @@ npm run typecheck  # TypeScript only
 | See underground | **X** |
 | Split the layers | **E** |
 | In 48 h | What happens if nobody acts (**F**) |
-| Compare outcomes | After the repair: doing nothing vs Pioneer |
+| Compare outcomes | After the repair: doing nothing vs UnderGrid |
 | Story | Play / pause (**Space**), start over (**R**), click the progress bar to seek |
 
 ---

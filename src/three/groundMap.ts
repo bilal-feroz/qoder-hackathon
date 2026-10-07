@@ -3,7 +3,7 @@ import { AD, AD_RECT, type XZ } from '../data/abudhabi';
 import { mulberry32 } from '../data/rng';
 
 /**
- * The street-level picture of downtown Abu Dhabi, painted once into a canvas:
+ * The street-level picture of downtown Abu Dhabi at dusk, painted once into a canvas:
  * paving, parks, real road shapes and UAE-style markings (yellow edge line on the
  * median side, white on the kerb side, dashed lane lines). Transparent where the
  * sea is, so the ground shader can cut the coastline out of the slab.
@@ -49,8 +49,8 @@ export function groundTexture() {
     g.stroke();
   };
 
-  // land: warm sand-coloured paving
-  g.fillStyle = '#cdc4b2';
+  // land: warm grey paving (the twin's dusk palette; the lighting does the rest)
+  g.fillStyle = '#77726a';
   path(AD.land, true);
   g.fill();
   g.save();
@@ -62,12 +62,12 @@ export function groundTexture() {
   for (let i = 0; i < 2600; i++) {
     const x = rnd() * canvas.width;
     const y = rnd() * canvas.height;
-    g.fillStyle = rnd() < 0.5 ? 'rgba(120,104,80,0.05)' : 'rgba(255,250,240,0.05)';
+    g.fillStyle = rnd() < 0.5 ? 'rgba(40,34,26,0.07)' : 'rgba(255,246,230,0.035)';
     g.fillRect(x, y, 6 + rnd() * 40, 6 + rnd() * 40);
   }
 
   // parks and lawns
-  g.fillStyle = '#7f9b5c';
+  g.fillStyle = '#4b6a39';
   for (const p of AD.parks) {
     path(p.p, true);
     g.fill();
@@ -79,13 +79,13 @@ export function groundTexture() {
 
   // kerbs / sidewalks first, then asphalt on top
   for (const r of roads) {
-    g.strokeStyle = r.c === 'pedestrian' ? '#ddd3c1' : '#e2dacb';
+    g.strokeStyle = r.c === 'pedestrian' ? '#86807a' : '#8c877f';
     g.lineWidth = (r.w + (MAJOR.test(r.c) ? 0.55 : 0.3)) * PX;
     path(r.p);
     g.stroke();
   }
   for (const r of roads) {
-    g.strokeStyle = r.c === 'pedestrian' ? '#d9cfbd' : MAJOR.test(r.c) ? '#383b41' : '#45484e';
+    g.strokeStyle = r.c === 'pedestrian' ? '#7c766d' : MAJOR.test(r.c) ? '#2c2e33' : '#34363b';
     g.lineWidth = r.w * PX;
     path(r.p);
     g.stroke();
@@ -100,16 +100,16 @@ export function groundTexture() {
       const lanes = Math.max(1, Math.round((r.w * 10 - 1) / 3.4));
       g.setLineDash([]);
       g.lineWidth = 1.2;
-      g.strokeStyle = 'rgba(214,170,58,0.95)'; // yellow: median side (left of travel)
+      g.strokeStyle = 'rgba(214,170,58,0.85)'; // yellow: median side (left of travel)
       offsetLine(r.p, hw);
-      g.strokeStyle = 'rgba(236,236,232,0.9)'; // white: kerb side
+      g.strokeStyle = 'rgba(236,236,232,0.75)'; // white: kerb side
       offsetLine(r.p, -hw);
       g.setLineDash([0.3 * PX, 0.6 * PX]);
       for (let i = 1; i < lanes; i++) offsetLine(r.p, -hw + (2 * hw * i) / lanes);
     } else {
       g.setLineDash([0.3 * PX, 0.5 * PX]);
       g.lineWidth = 1.1;
-      g.strokeStyle = 'rgba(236,236,232,0.85)';
+      g.strokeStyle = 'rgba(236,236,232,0.7)';
       offsetLine(r.p, 0);
     }
   }

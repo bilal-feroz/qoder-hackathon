@@ -1,6 +1,6 @@
 import type { OrbState } from 'thinking-orbs';
 
-/** The six Pioneer agents. Each owns one job and hands off to the next. */
+/** The six UnderGrid agents. Each owns one job and hands off to the next. */
 export type AgentId = 'watch' | 'diagnose' | 'plan' | 'patch' | 'dispatch' | 'verify';
 
 export interface AgentDef {

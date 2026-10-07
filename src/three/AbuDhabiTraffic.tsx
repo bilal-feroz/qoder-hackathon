@@ -1,6 +1,6 @@
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { BufferGeometry, Color, InstancedBufferAttribute, InstancedMesh, Matrix4, Quaternion, Vector3, type Intersection, type Raycaster } from 'three';
+import { AdditiveBlending, BufferGeometry, Color, InstancedBufferAttribute, InstancedMesh, Matrix4, PlaneGeometry, Quaternion, ShaderMaterial, Vector3, type Intersection, type Raycaster } from 'three';
 import { AD, type XZ } from '../data/abudhabi';
 import { TRENCH } from '../data/incident';
 import { mulberry32 } from '../data/rng';
@@ -9,6 +9,47 @@ import { T, fastForwardAt } from '../simulation/timeline';
 import { useTwinStore } from '../store/useTwinStore';
 import { VEHICLE_LENGTH, vehicleGeometry, type VehicleKind } from './vehicles/vehicleModels';
 import { createVehicleMaterial } from './vehicles/vehicleMaterial';
+import { G } from './shaders/globals';
+
+/** Headlight cones ahead of each car and a red tail glow behind it (brighter when braking), on the asphalt. */
+function createBeamMaterial() {
+  return new ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    blending: AdditiveBlending,
+    uniforms: { uXray: G.uXray },
+    vertexShader: /* glsl */ `
+      attribute vec2 aPool;
+      varying vec2 vP;
+      varying vec2 vPool;
+      void main() {
+        vP = position.xz;
+        vPool = aPool;
+        gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: /* glsl */ `
+      uniform float uXray;
+      varying vec2 vP;
+      varying vec2 vPool;
+      void main() {
+        vec3 col;
+        if (vPool.x < 0.5) {
+          // headlight beam on the asphalt: widening cone, fading with distance
+          float t = vP.y + 0.5;
+          float w = 0.3 + 0.7 * t;
+          float a = (1.0 - smoothstep(0.45, 1.0, abs(vP.x) / (0.5 * w))) * smoothstep(0.0, 0.1, t) * (1.0 - smoothstep(0.3, 1.0, t));
+          col = vec3(1.0, 0.86, 0.62) * a * 0.3;
+        } else {
+          float d = length(vP * 2.0);
+          float a = (1.0 - smoothstep(0.0, 1.0, d));
+          col = vec3(1.0, 0.07, 0.03) * a * a * (0.12 + 0.42 * vPool.y);
+        }
+        gl_FragColor = vec4(col * (1.0 - uXray), 1.0);
+      }
+    `,
+  });
+}
 
 /**
  * Everyday traffic on the real downtown streets (OpenStreetMap): cars keep right, follow
@@ -171,6 +212,13 @@ export function AbuDhabiTraffic() {
   const p = useMemo(() => new Vector3(), []);
   const up = useMemo(() => new Vector3(0, 1, 0), []);
   const sc = useMemo(() => new Vector3(), []);
+  const beamRef = useRef<InstancedMesh>(null);
+  const beamGeo = useMemo(() => {
+    const g = new PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
+    g.setAttribute('aPool', new InstancedBufferAttribute(new Float32Array(cars.length * 2 * 2), 2));
+    return g;
+  }, [cars]);
+  const beamMat = useMemo(() => createBeamMaterial(), []);
 
   useFrame((_, rawDt) => {
     const st = useTwinStore.getState();
@@ -262,6 +310,27 @@ export function AbuDhabiTraffic() {
       if (!painted.current && mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     });
     painted.current = true;
+
+    // headlight cones and tail glows follow the cars
+    const beams = beamRef.current;
+    if (beams) {
+      beams.visible = vis;
+      const attr = beamGeo.getAttribute('aPool') as InstancedBufferAttribute;
+      cars.forEach((c, i) => {
+        const fx = Math.sin(c.yaw);
+        const fz = Math.cos(c.yaw);
+        const s = c.hidden ? 0.0001 : CAR_SCALE;
+        q.setFromAxisAngle(up, c.yaw);
+        p.set(c.x + fx * (c.len / 2 + 1.1 * s), 0.03, c.z + fz * (c.len / 2 + 1.1 * s));
+        beams.setMatrixAt(i * 2, m4.compose(p, q, sc.set(1.1 * s, 1, 2.2 * s)));
+        attr.setXY(i * 2, 0, 0);
+        p.set(c.x - fx * (c.len / 2 + 0.14 * s), 0.03, c.z - fz * (c.len / 2 + 0.14 * s));
+        beams.setMatrixAt(i * 2 + 1, m4.compose(p, q, sc.set(0.66 * s, 1, 0.5 * s)));
+        attr.setXY(i * 2 + 1, 1, c.brake);
+      });
+      beams.instanceMatrix.needsUpdate = true;
+      attr.needsUpdate = true;
+    }
   });
 
   return (
@@ -279,6 +348,7 @@ export function AbuDhabiTraffic() {
           castShadow
         />
       ))}
+      <instancedMesh ref={beamRef} args={[beamGeo, beamMat, cars.length * 2]} frustumCulled={false} raycast={noRaycast} renderOrder={3} />
     </group>
   );
 }

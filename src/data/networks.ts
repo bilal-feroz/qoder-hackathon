@@ -411,7 +411,14 @@ function build(layerId: LayerId, variant: 'main' | 'supply' | 'return', offset: 
 const LEAK_AT: [number, number] = [1.5, LAYERS.water.offset];
 
 /** Street centre-line pieces from OpenStreetMap (underpasses and footpaths excluded). */
-const STREET_EDGES = AD.roads.filter((r) => r.c !== 'pedestrian').flatMap((r) => r.p.slice(1).map((q, i) => ({ a: r.p[i], b: q, cls: r.c })));
+const STREET_EDGES = AD.roads.filter((r) => r.c !== 'pedestrian').flatMap((r) => r.p.slice(1).map((q, i) => ({ a: r.p[i], b: q, cls: r.c, oneway: r.o === 1 })));
+
+/**
+ * A dual carriageway is two one-way roads side by side; a utility runs under one of them, not both.
+ * Keep the one-way pieces heading this way (for Khalifa Street, the carriageway over the demo leak).
+ */
+const KEEP_DIR: [number, number] = [0.94, 0.33];
+const keptCarriageway = (e: (typeof STREET_EDGES)[number]) => !e.oneway || (e.b[0] - e.a[0]) * KEEP_DIR[0] + (e.b[1] - e.a[1]) * KEEP_DIR[1] >= 0;
 
 /** Clip a segment to the slab so pipes end flush with its cut faces. */
 function clipToSlab(ax: number, az: number, bx: number, bz: number): [number, number, number, number] | null {
@@ -441,7 +448,7 @@ function clipToSlab(ax: number, az: number, bx: number, bz: number): [number, nu
 function underStreets(b: NetBuilder, classes: RegExp, trunk?: RegExp, near?: [number, number, number]) {
   const o = b.offset;
   for (const e of STREET_EDGES) {
-    if (!classes.test(e.cls)) continue;
+    if (!classes.test(e.cls) || !keptCarriageway(e)) continue;
     const mx = (e.a[0] + e.b[0]) / 2 + o;
     const mz = (e.a[1] + e.b[1]) / 2 + o;
     if (near && Math.hypot(mx - near[0], mz - near[1]) > near[2]) continue;
@@ -522,13 +529,13 @@ function shortestPath(segments: PipeSegment[], from: string, to: string, skip: n
 }
 
 const WATER = build('water', 'main', LAYERS.water.offset, (b) => {
-  underStreets(b, /^(trunk|primary|secondary|tertiary|unclassified)$/, /^(trunk|primary)$/);
+  underStreets(b, /^(trunk|primary|secondary|tertiary)$/, /^(trunk|primary)$/);
   return { source: nearestNode(b, 40, DIORAMA.minZ) };
 });
 
 const SUBSTATION = place('substation');
 const ELECTRIC = build('electric', 'main', LAYERS.electric.offset, (b) => {
-  underStreets(b, /^(primary|secondary|tertiary)$/, /^primary$/);
+  underStreets(b, /^(primary|secondary)$/, /^primary$/);
   const src = nearestNode(b, SUBSTATION?.x ?? 0, SUBSTATION?.z ?? 20);
   b.riser(src[0], src[1]);
   return { source: src };
@@ -542,7 +549,7 @@ const TELECOM = build('telecom', 'main', LAYERS.telecom.offset, (b) => {
 /** District cooling serves the tower cluster around The Landmark and ADIA. */
 const COOLING_AREA: [number, number, number] = [72, 4, 32];
 function coolingDef(b: NetBuilder) {
-  underStreets(b, /^(primary|secondary|tertiary|unclassified|residential)$/, /^(primary|secondary)$/, COOLING_AREA);
+  underStreets(b, /^(primary|secondary|tertiary)$/, /^(primary|secondary)$/, COOLING_AREA);
   const src = nearestNode(b, 86, 14);
   b.riser(src[0], src[1]);
   return { source: src as [number, number] };
@@ -552,7 +559,7 @@ const COOLING_SUPPLY = build('cooling', 'supply', LAYERS.cooling.offset - 0.5, c
 const COOLING_RETURN = build('cooling', 'return', LAYERS.cooling.offset + 0.5, (b) => ({ ...coolingDef(b), sink: true }));
 
 const SEWAGE = build('sewage', 'main', LAYERS.sewage.offset, (b) => {
-  underStreets(b, /^(trunk|primary|secondary|tertiary|unclassified|residential)$/, /^(trunk|primary)$/);
+  underStreets(b, /^(trunk|primary|secondary|tertiary)$/, /^(trunk|primary)$/);
   return { source: nearestNode(b, -60, DIORAMA.minZ), sink: true };
 });
 

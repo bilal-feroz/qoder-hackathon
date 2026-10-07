@@ -25,7 +25,7 @@ import '../styles/panels.css';
 import '../styles/overlays.css';
 import '../styles/world.css';
 import '../styles/geo.css';
-import '../styles/pioneer.css';
+import '../styles/undergrid.css';
 import '../styles/agents.css';
 
 function useViewportInsets(ref: React.RefObject<HTMLDivElement | null>) {
@@ -99,7 +99,7 @@ export function App() {
       <aside className="rail rail-l panel panel-enter" style={{ ['--enter-delay' as string]: '80ms' }} aria-label="Live signals">
         <SignalRail />
       </aside>
-      <aside className="rail rail-r panel panel-enter" style={{ ['--enter-delay' as string]: '160ms' }} aria-label="Pioneer agents">
+      <aside className="rail rail-r panel-enter" style={{ ['--enter-delay' as string]: '160ms' }} aria-label="UnderGrid agents">
         <AgentsPanel />
       </aside>
 
