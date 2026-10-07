@@ -202,7 +202,7 @@ function MoistureVolume() {
           varying vec3 vV;
           varying vec3 vP;
           void main() {
-            float f = abs(dot(normalize(vN), normalize(vV)));
+            float f = clamp(abs(dot(normalize(vN), normalize(vV))), 0.0, 1.0);
             float body = pow(f, 1.6);
             float rim = pow(1.0 - f, 3.0);
             vec3 col = uColor * (0.35 + body * 0.4) + vec3(0.4, 0.75, 1.0) * rim * 0.6;

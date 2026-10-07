@@ -39,7 +39,10 @@ export function createSkyMaterial(forEnv = false) {
         float hy = max(y, 0.0);
         vec2 hz = normalize(d.xz + vec2(1e-5));
         vec2 sz = normalize(uSun.xz);
-        float az = dot(hz, sz) * 0.5 + 0.5;          // 1 = towards the sun
+        // clamped: rounding can dip below 0 facing away from the sun, and pow() of a
+        // negative is NaN on Direct3D (Chrome on Windows), which the env-map blur spreads
+        // over every reflection until the whole city renders black
+        float az = clamp(dot(hz, sz) * 0.5 + 0.5, 0.0, 1.0); // 1 = towards the sun
         float warmA = pow(az, 5.0);
 
         vec3 zenith = vec3(0.010, 0.024, 0.066);
