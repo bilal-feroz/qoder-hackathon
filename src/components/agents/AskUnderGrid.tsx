@@ -6,7 +6,7 @@ import { ThinkingLine } from './ThinkingLine';
 const SUGGESTIONS = ['Why this fix?', 'Why Crew 07?', 'Is the hospital OK?'];
 
 /** Ask the agents about what they did. Answers come from Qwen using only the run's facts. */
-export function AskUnderGrid({ facts }: { facts: () => ReturnType<typeof factsNow> }) {
+export function AskUnderGrid({ facts, chips = true }: { facts: () => ReturnType<typeof factsNow>; chips?: boolean }) {
   const [q, setQ] = useState('');
   const [busy, setBusy] = useState(false);
   const [reply, setReply] = useState<{ q: string; answer: string; by: 'qwen' | 'built-in' } | null>(null);
@@ -44,7 +44,7 @@ export function AskUnderGrid({ facts }: { facts: () => ReturnType<typeof factsNo
           <ArrowUp size={15} strokeWidth={2.4} />
         </button>
       </form>
-      {!reply && !busy && (
+      {chips && !reply && !busy && (
         <div className="ask-chips">
           {SUGGESTIONS.map((s) => (
             <button key={s} type="button" onClick={() => void ask(s)}>

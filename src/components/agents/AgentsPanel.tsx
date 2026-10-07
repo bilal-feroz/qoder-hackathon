@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ThinkingOrb } from 'thinking-orbs';
 import { Check, ChevronDown, GitCompare, RotateCcw, X } from 'lucide-react';
 import { useTwinStore } from '../../store/useTwinStore';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
-import { buildRun, crewStatus, type AgentEntry, type AgentRun, type Autonomy, type How } from '../../agents/brain';
+import { buildRun, crewStatus, decisionsOf, type AgentEntry, type AgentRun, type Answers, type Autonomy, type How } from '../../agents/brain';
 import { AGENT_BY_ID, type AgentId } from '../../agents/team';
 import { CREWS, PEOPLE_ON_SHIFT, type Skill } from '../../agents/crews';
 import { COSTS, INCIDENT, formatMoney } from '../../data/incident';
@@ -13,7 +13,7 @@ import { useRimMask } from '../ui/ai-lights/useAiLights';
 import { EVEN_STOPS } from '../ui/ai-lights/mask';
 import { AutonomySwitch } from './AutonomySwitch';
 import { ThinkingLine } from './ThinkingLine';
-import { ApprovalCard } from './ApprovalCard';
+import { QuestionCard } from './QuestionCard';
 import { AskUnderGrid } from './AskUnderGrid';
 import { SavingsChart, WhatIfChart } from './AgentCharts';
 
@@ -30,40 +30,53 @@ const SKILL: Record<Skill, string> = { 'water-main': 'Big pipes', 'water-service
 
 function howLabel(how: How, autonomy: Autonomy) {
   if (how === 'auto') return autonomy === 'full' ? 'Did it alone' : 'Inside your limits';
-  if (how === 'approved') return 'You approved';
-  if (how === 'declined') return 'Changed after your answer';
+  if (how === 'chose') return 'You chose';
+  if (how === 'approved') return 'You OK’d it';
+  if (how === 'default') return 'Our pick · no answer';
   return 'Waiting for you';
 }
 
-/** One decision: who, what, and (for the latest) the options it weighed. */
-function Entry({ e, latest, autonomy, still }: { e: AgentEntry; latest: boolean; autonomy: Autonomy; still: boolean }) {
+/** The same, short enough to sit beside a step's title. */
+const HOW_SHORT: Record<How, string> = { auto: 'Auto', chose: 'You', approved: 'You OK’d', default: 'Our pick', waiting: 'Waiting' };
+
+/** Seconds between the trace's steps appearing under a live entry. */
+const STEP_GAP = 0.8;
+
+/** One line of the trace; the live one (and any opened one) shows its detail, steps, checks and options. */
+function TraceItem({ e, live, t, autonomy, still }: { e: AgentEntry; live: boolean; t: number; autonomy: Autonomy; still: boolean }) {
   const [open, setOpen] = useState(false);
+  const [why, setWhy] = useState(false);
   const agent = AGENT_BY_ID[e.agent];
+  const expanded = live || open;
+  const steps = e.steps ?? [];
+  // the live entry reveals its steps as the clock runs; finished ones show them all
+  const shownSteps = live ? steps.filter((_, i) => t >= e.t + 0.35 + i * STEP_GAP) : steps;
+  const working = live && shownSteps.length < steps.length;
   return (
-    <li className={`entry ${latest ? 'is-latest' : ''}`}>
-      <div className="entry-who">
-        {latest ? <ThinkingOrb state={agent.orb} size={20} theme="dark" paused={still} aria-hidden="true" /> : <span className="entry-dot" aria-hidden="true" />}
-        <span className="entry-agent">{agent.name}</span>
-        {e.how && <span className={`entry-how how-${e.how}`}>{howLabel(e.how, autonomy)}</span>}
-      </div>
-      <p className="entry-title">{e.title}</p>
-      {latest && <p className="entry-detail">{e.detail}</p>}
-      {latest && e.options && (
-        <div className={`entry-options ${open ? 'is-open' : ''}`}>
-          <button className="entry-options-toggle" aria-expanded={open} onClick={() => setOpen(!open)}>
-            Why this one? {e.options.length} options compared
-            <ChevronDown size={13} />
-          </button>
-          <div className="entry-options-panel">
-            <ul className="entry-options-inner">
-              {e.options.map((o) => (
-                <li key={o.label} className={o.chosen ? 'is-chosen' : ''}>
-                  <b>{o.label}</b>
-                  <span>{o.note}</span>
-                </li>
+    <li className={`trace-item ${live ? 'is-live' : ''} ${expanded ? 'is-open' : ''} ${e.tone === 'warn' ? 'is-warn' : ''}`}>
+      <span className="trace-dot" aria-hidden="true">
+        {live ? <ThinkingOrb state={agent.orb} size={20} theme="dark" paused={still} aria-hidden="true" /> : <i />}
+      </span>
+      <button className="trace-row" aria-expanded={expanded} onClick={() => !live && setOpen(!open)} disabled={live}>
+        <span className="trace-agent">{agent.name}</span>
+        <span className="trace-title">{e.title}</span>
+        {e.how && (
+          <span className={`trace-how how-${e.how}`} title={howLabel(e.how, autonomy)}>
+            {HOW_SHORT[e.how]}
+          </span>
+        )}
+      </button>
+      {expanded && (
+        <div className="trace-more">
+          <p className="trace-detail">{e.detail}</p>
+          {shownSteps.length > 0 && (
+            <ul className="trace-steps">
+              {shownSteps.map((s) => (
+                <li key={s}>{s}</li>
               ))}
+              {working && <li className="is-working">…</li>}
             </ul>
-          </div>
+          )}
           {e.checks && (
             <ul className="entry-checks" aria-label="Limits checked">
               {e.checks.map((c) => (
@@ -73,6 +86,24 @@ function Entry({ e, latest, autonomy, still }: { e: AgentEntry; latest: boolean;
                 </li>
               ))}
             </ul>
+          )}
+          {e.options && (
+            <div className={`entry-options ${why ? 'is-open' : ''}`}>
+              <button className="entry-options-toggle" aria-expanded={why} onClick={() => setWhy(!why)}>
+                Why this one? {e.options.length} options compared
+                <ChevronDown size={13} />
+              </button>
+              <div className="entry-options-panel">
+                <ul className="entry-options-inner">
+                  {e.options.map((o) => (
+                    <li key={o.label} className={o.chosen ? 'is-chosen' : ''}>
+                      <b>{o.label}</b>
+                      <span>{o.note}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           )}
         </div>
       )}
@@ -109,8 +140,10 @@ function Crews({ run, t, active }: { run: AgentRun; t: number; active: boolean }
   );
 }
 
-/** The result, with the two charts: what the fix saved and what would have happened. */
-function Outcome({ run }: { run: AgentRun }) {
+const BY_LABEL = { you: 'you', default: 'our pick', agents: 'agents' } as const;
+
+/** The result, with the calls that shaped it and the two charts: what the fix saved and what would have happened. */
+function Outcome({ run, answers }: { run: AgentRun; answers: Answers }) {
   const setCompare = useTwinStore((s) => s.setCompare);
   const compare = useTwinStore((s) => s.compare);
   const replay = useTwinStore((s) => s.run);
@@ -138,6 +171,14 @@ function Outcome({ run }: { run: AgentRun }) {
           <span>risk</span>
         </div>
       </div>
+      <ul className="outcome-calls" aria-label="The calls that were made">
+        {decisionsOf(run, answers).map((d) => (
+          <li key={d.id} className={`by-${d.by}`}>
+            {d.text}
+            <span>{BY_LABEL[d.by]}</span>
+          </li>
+        ))}
+      </ul>
       <SavingsChart fixCost={run.fix.cost} />
       <WhatIfChart />
       <div className="outcome-actions">
@@ -154,53 +195,62 @@ function Outcome({ run }: { run: AgentRun }) {
 }
 
 /**
- * The agents as a dropdown: one line saying what they are doing, opening on its own when they need
- * a person (an approval) or have a result, and on demand otherwise. A constant light-blue halo
- * (AI lights) runs round its rim.
+ * The agents as a dropdown. It drops open by itself when they start work and shows the live trace:
+ * each agent's step, what it is doing right now, and the questions it puts to you (multiple choice).
+ * A constant light-blue halo (AI lights) runs round its rim.
  */
 export function AgentsPanel() {
   const snap = useTwinStore((s) => s.snap);
   const policy = useTwinStore((s) => s.policy);
-  const verdict = useTwinStore((s) => s.approvals.plan);
+  const answers = useTwinStore((s) => s.answers);
   const awaiting = useTwinStore((s) => s.awaiting);
   const still = useMediaQuery('(prefers-reduced-motion: reduce)');
-  const run = useMemo(() => buildRun(policy, verdict), [policy, verdict]);
+  const run = useMemo(() => buildRun(policy, answers), [policy, answers]);
   const [open, setOpen] = useState(false);
-  const [history, setHistory] = useState(false);
+  const [trace, setTrace] = useState(false);
   const glowRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const layers = useRimMask(glowRef, { stops: EVEN_STOPS });
 
   const { t, active, resolved } = snap;
   const shown = active ? run.entries.filter((e) => e.t <= t + 1e-6) : [];
   const latest = shown[shown.length - 1];
   const working = active && !resolved && !awaiting;
-  const lead: AgentId = !active ? 'watch' : awaiting ? 'plan' : resolved ? 'verify' : (latest?.agent ?? 'watch');
+  const lead: AgentId = !active ? 'watch' : awaiting ? awaiting.agent : resolved ? 'verify' : (latest?.agent ?? 'watch');
   const line = !active
     ? 'Watch is checking 216 sensors'
     : awaiting
-      ? 'Waiting for your OK on the repair plan'
+      ? `${AGENT_BY_ID[awaiting.agent].name} has a question for you`
       : resolved
         ? run.lasting
           ? 'All clear · lesson saved'
-          : 'Leak stopped · full repair needs your OK'
+          : 'Leak stopped · the full repair is still needed'
         : DOING[lead];
   const mode = active ? (resolved ? 'Done' : awaiting ? 'Needs you' : 'Working') : 'Standing by';
 
-  // drop down when needed: a decision waiting for a person, or the result is in
+  // drop down when the agents start, when they ask something, and when the result is in
+  useEffect(() => {
+    if (active) setOpen(true);
+    else {
+      setOpen(false);
+      setTrace(false);
+    }
+  }, [active]);
   useEffect(() => {
     if (awaiting) setOpen(true);
   }, [awaiting]);
   useEffect(() => {
     if (resolved) setOpen(true);
   }, [resolved]);
-  useEffect(() => {
-    if (!active) {
-      setOpen(false);
-      setHistory(false);
-    }
-  }, [active]);
 
-  const earlier = shown.slice(0, -1).reverse();
+  // keep the newest step (or the question) in view; the result scrolls back to the top
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el || !open) return;
+    el.scrollTo({ top: resolved ? 0 : el.scrollHeight, behavior: still ? 'auto' : 'smooth' });
+  }, [shown.length, awaiting, resolved, open, still]);
+
+  const showTrace = active && (!resolved || trace);
 
   return (
     <div ref={glowRef} className={`agents-dd ai-lights is-constant ${open ? 'is-open' : ''} ${awaiting ? 'needs-you' : ''}`}>
@@ -221,30 +271,28 @@ export function AgentsPanel() {
         <div id="agents-body" className="agents-body" aria-hidden={!open}>
           <div className="agents-body-inner">
             <AutonomySwitch />
-            {awaiting && <ApprovalCard gate={awaiting} still={still} />}
-            {resolved && <Outcome run={run} />}
-            {!resolved && latest && (
-              <ol className="feed" aria-label="What the agents are doing">
-                <Entry key={latest.id} e={latest} latest autonomy={policy.autonomy} still={still} />
-              </ol>
-            )}
-            {earlier.length > 0 && (
-              <section className={`history ${history ? 'is-open' : ''}`}>
-                <button className="history-toggle" aria-expanded={history} onClick={() => setHistory(!history)}>
-                  {earlier.length} {earlier.length === 1 ? 'step' : 'steps'} so far
+            <div className="agents-scroll" ref={scrollRef}>
+              {!active && <p className="agents-idle">Press play: the agents will show each step here and ask you when there is a real choice to make.</p>}
+              {resolved && <Outcome run={run} answers={answers} />}
+              {resolved && (
+                <button className="history-toggle" aria-expanded={trace} onClick={() => setTrace(!trace)}>
+                  {trace ? 'Hide' : 'See'} all {shown.length} steps
                   <ChevronDown size={13} />
                 </button>
-                {history && (
-                  <ol className="feed is-compact" aria-label="Earlier steps">
-                    {earlier.map((e) => (
-                      <Entry key={e.id} e={e} latest={false} autonomy={policy.autonomy} still={still} />
-                    ))}
-                  </ol>
-                )}
-              </section>
-            )}
-            <AskUnderGrid facts={() => factsNow(run, shown, policy, awaiting, t, active, resolved)} />
-            <Crews run={run} t={t} active={active} />
+              )}
+              {showTrace && shown.length > 0 && (
+                <ol className="trace" aria-label="What the agents are doing">
+                  {shown.map((e) => (
+                    <TraceItem key={e.id} e={e} live={!resolved && !awaiting && e === latest} t={t} autonomy={policy.autonomy} still={still} />
+                  ))}
+                </ol>
+              )}
+              {awaiting && <QuestionCard key={awaiting.id} q={awaiting} still={still} />}
+            </div>
+            <div className="agents-foot">
+              <AskUnderGrid facts={() => factsNow(run, shown, policy, awaiting, t, active, resolved)} chips={!active || resolved} />
+              <Crews run={run} t={t} active={active} />
+            </div>
           </div>
         </div>
       </div>

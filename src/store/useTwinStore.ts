@@ -4,7 +4,7 @@ import { telemetryAt, HISTORY_LENGTH, HISTORY_STEP } from '../simulation/telemet
 import { runtime } from '../simulation/runtime';
 import { T } from '../simulation/timeline';
 import type { LayerId } from '../data/networks';
-import { DEFAULT_POLICY, gateFor, type Autonomy, type Gate, type Policy, type Verdict } from '../agents/brain';
+import { DEFAULT_POLICY, nextQuestion, questionsFor, type Answers, type AnsweredBy, type Autonomy, type Policy, type Question } from '../agents/brain';
 
 export type PresetId = 'city' | 'sector' | 'underground' | 'failure' | 'impact';
 export type Status = 'idle' | 'running' | 'paused' | 'finished';
@@ -61,13 +61,13 @@ interface TwinState {
 
   /** How much the agents may do alone, and the operator's answers this run. */
   policy: Policy;
-  approvals: Partial<Record<Gate['id'], Verdict>>;
-  /** Set while the clock is held for a person's answer. */
-  awaiting: Gate | null;
+  answers: Answers;
+  /** Set while the clock is held on a question for the operator. */
+  awaiting: Question | null;
   setAutonomy: (a: Autonomy) => void;
   setSpendLimit: (v: number) => void;
-  hold: (g: Gate) => void;
-  decide: (v: Verdict) => void;
+  hold: (q: Question) => void;
+  answer: (choice: string, by?: AnsweredBy) => void;
 
   setBoot: (b: TwinState['boot']) => void;
   setSceneReady: () => void;
@@ -120,10 +120,17 @@ function buildHistory(t: number, wall: number, active: boolean): History {
 
 const isActive = (s: Status) => s !== 'idle';
 
-/** The gate the clock still has to stop at, if the current limits need one and nobody has answered. */
-export function pendingGate(policy: Policy, approvals: TwinState['approvals']): Gate | null {
-  const g = gateFor(policy);
-  return g && !approvals[g.id] ? g : null;
+/** The next question the clock has to stop at after `after` (none in Full auto). */
+export function pendingQuestion(policy: Policy, answers: Answers, after = -Infinity): Question | null {
+  return nextQuestion(policy, answers, after);
+}
+
+/** Re-read the open question under new limits: settle it if nobody needs asking now, else refresh it. */
+function reask(policy: Policy, awaiting: Question | null, answers: Answers): Partial<TwinState> {
+  if (!awaiting) return {};
+  const q = questionsFor(policy).find((x) => x.id === awaiting.id);
+  if (!q) return { awaiting: null, status: 'running', answers: { ...answers, [awaiting.id]: { choice: awaiting.recommended, by: 'agents' } } };
+  return { awaiting: q };
 }
 
 export const useTwinStore = create<TwinState>()((set, get) => ({
@@ -154,24 +161,25 @@ export const useTwinStore = create<TwinState>()((set, get) => ({
   hoverSector: null,
 
   policy: DEFAULT_POLICY,
-  approvals: {},
+  answers: {},
   awaiting: null,
   setAutonomy: (autonomy) => {
     set((s) => ({ policy: { ...s.policy, autonomy } }));
-    // if the new limits no longer need an answer, the agents carry on by themselves
+    // Full auto settles the open question with the agents' pick; other modes re-ask it under the new rules
     const s = get();
-    if (s.awaiting && !gateFor(s.policy)) set({ awaiting: null, status: 'running' });
+    set(reask(s.policy, s.awaiting, s.answers));
   },
   setSpendLimit: (spendLimit) => {
     set((s) => ({ policy: { ...s.policy, spendLimit } }));
     const s = get();
-    if (s.awaiting && !gateFor(s.policy)) set({ awaiting: null, status: 'running' });
+    set(reask(s.policy, s.awaiting, s.answers));
   },
   hold: (awaiting) => set({ awaiting, status: 'paused' }),
-  decide: (verdict) => {
-    const { awaiting, approvals } = get();
+  answer: (choice, by = 'you') => {
+    const { awaiting, answers } = get();
     if (!awaiting) return;
-    set({ approvals: { ...approvals, [awaiting.id]: verdict }, awaiting: null, status: 'running' });
+    if (awaiting.choices.find((c) => c.id === choice)?.off) return;
+    set({ answers: { ...answers, [awaiting.id]: { choice, by } }, awaiting: null, status: 'running' });
   },
 
   setBoot: (boot) => set({ boot }),
@@ -211,7 +219,7 @@ export const useTwinStore = create<TwinState>()((set, get) => ({
       scenarioMenu: false,
       visible: { ...ALL_VISIBLE },
       activePreset: 'city',
-      approvals: {},
+      answers: {},
       awaiting: null,
     });
     get().regenerateHistory();
@@ -246,7 +254,7 @@ export const useTwinStore = create<TwinState>()((set, get) => ({
       visible: { ...ALL_VISIBLE },
       scenarioMenu: false,
       activePreset: 'city',
-      approvals: {},
+      answers: {},
       awaiting: null,
     });
     get().requestShot('city');
@@ -255,16 +263,27 @@ export const useTwinStore = create<TwinState>()((set, get) => ({
   },
   finish: () => set({ status: 'finished' }),
   seek: (t) => {
-    // seeking can't skip past a decision that is still waiting for a person
-    const gate = pendingGate(get().policy, get().approvals);
-    const held = gate !== null && t >= gate.t;
-    const clamped = held ? gate.t : Math.max(0, Math.min(T.end, t));
+    // seeking past a question takes the agents' pick, except where a person must answer: the clock stops there
+    const { policy } = get();
+    const answers = { ...get().answers };
+    let gate: Question | null = null;
+    for (const q of questionsFor(policy)) {
+      if (answers[q.id] || q.t > t) continue;
+      if (q.waits) {
+        gate = q;
+        break;
+      }
+      answers[q.id] = { choice: q.recommended, by: 'default' };
+    }
+    const held = gate !== null;
+    const clamped = gate ? gate.t : Math.max(0, Math.min(T.end, t));
     runtime.t = clamped;
     runtime.lastT = clamped;
     const c = controlledAt(clamped);
     set({
       status: held ? 'paused' : clamped >= T.end ? 'finished' : 'running',
-      awaiting: held ? gate : null,
+      answers,
+      awaiting: gate,
       xray: c.xray,
       trench: c.trench,
       focus: c.focus,

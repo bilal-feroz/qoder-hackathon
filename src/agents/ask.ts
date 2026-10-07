@@ -1,12 +1,12 @@
 import { COSTS, INCIDENT, POI, formatMoney } from '../data/incident';
 import { CREWS } from './crews';
-import { crewStatus, type AgentEntry, type AgentRun, type Gate, type Policy } from './brain';
+import { crewStatus, type AgentEntry, type AgentRun, type Policy, type Question } from './brain';
 import { AGENT_BY_ID } from './team';
 
 /** Everything the agents know at this moment, as plain facts the language model may use. */
-export function factsNow(run: AgentRun, shown: AgentEntry[], policy: Policy, gate: Gate | null, t: number, active: boolean, resolved: boolean) {
+export function factsNow(run: AgentRun, shown: AgentEntry[], policy: Policy, gate: Question | null, t: number, active: boolean, resolved: boolean) {
   return {
-    status: !active ? 'watching, nothing wrong' : gate ? 'paused, waiting for the operator' : resolved ? 'finished' : 'working on a leak',
+    status: !active ? 'watching, nothing wrong' : gate ? 'paused, asking the operator a question' : resolved ? 'finished' : 'working on a leak',
     autonomy: { mode: policy.autonomy, spendLimitWithoutAsking: policy.autonomy === 'limits' ? formatMoney(policy.spendLimit) : null },
     incident: active
       ? {
@@ -19,7 +19,7 @@ export function factsNow(run: AgentRun, shown: AgentEntry[], policy: Policy, gat
         }
       : null,
     costs: { repairNow: formatMoney(run.fix.cost), ifItBursts: formatMoney(COSTS.failure), saved: run.lasting ? formatMoney(COSTS.avoided) : null },
-    waitingFor: gate ? { title: gate.title, why: gate.why } : null,
+    waitingFor: gate ? { question: gate.ask, choices: gate.choices.map((c) => `${c.id === gate.recommended ? "RECOMMENDED: " : ""}${c.label} (${c.off ? "ruled out: " + c.off : c.note})`), why: gate.why } : null,
     done: shown.map((e) => ({
       agent: AGENT_BY_ID[e.agent].name,
       did: e.title,
@@ -50,8 +50,8 @@ export function builtInAnswer(q: string, f: Facts): string {
     return d ? `${d.did}: ${d.detail}.` : 'No road closure has been decided yet.';
   }
   if (/fix|replace|clamp|why|plan|choose|chose/.test(s)) {
-    const d = find(/^(Chose|Changed plan)/);
-    return d ? `${d.did}. ${d.detail}.` : f.waitingFor ? `${f.waitingFor.title}. ${f.waitingFor.why}` : 'The agents are still working out the best fix.';
+    const d = find(/^Going to/);
+    return d ? `${d.did}. ${d.detail}.` : f.waitingFor ? `${f.waitingFor.question} ${f.waitingFor.why}` : 'The agents are still working out the best fix.';
   }
   const last = f.done[f.done.length - 1];
   return last ? `Latest: ${last.agent} — ${last.did}.` : 'The agents are looking into it.';

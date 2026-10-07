@@ -42,7 +42,7 @@ function StatusPill() {
   }
   if (awaiting) {
     tone = 'warn';
-    text = 'Agents are waiting for your OK';
+    text = 'The agents have a question for you';
   }
   if (future) {
     tone = 'alert';

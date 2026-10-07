@@ -1,6 +1,6 @@
 import { useFrame } from '@react-three/fiber';
 import { useRef } from 'react';
-import { pendingGate, useTwinStore } from '../store/useTwinStore';
+import { pendingQuestion, useTwinStore } from '../store/useTwinStore';
 import { runtime, live, DAMP, LINEAR, dampTowards, moveTowards } from '../simulation/runtime';
 import { computeSnapshot, computeTargets, EVENTS, type VisualTargets } from '../simulation/engine';
 import { T, ramp } from '../simulation/timeline';
@@ -34,8 +34,8 @@ export function SimulationDriver() {
     const active = st.status !== 'idle';
     if (st.status === 'running') {
       let next = Math.min(T.end, runtime.t + dt);
-      // the agents stop and wait here when the operator's limits need an answer
-      const gate = pendingGate(st.policy, st.approvals);
+      // the agents stop here and put a question to the operator
+      const gate = pendingQuestion(st.policy, st.answers, runtime.lastT);
       const holdHere = gate !== null && gate.t > runtime.lastT && gate.t <= next;
       if (holdHere) next = gate.t;
       runtime.t = next;

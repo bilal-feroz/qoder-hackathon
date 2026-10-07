@@ -26,7 +26,9 @@
 ## Agents
 
 - Decisions are pure functions in `src/agents/brain.ts` (team in `team.ts`, crews in `crews.ts`), so pause/seek/replay stay exact.
-- Autonomy: Full auto / With limits (default, AED 1M) / Ask me. The clock holds at the plan (`gateFor`) when the limits need a person; `SimulationDriver` and `seek` both respect the hold.
+- While they work the agents ask three multiple-choice questions (`questionsFor`: the fix, the road closure, who to tell), each with their pick marked and ruled-out choices shown disabled. The answers change the plan (`buildRun(policy, answers)`).
+- Autonomy: Full auto (no questions) / With limits (default, AED 1M: a 9 s countdown, then the agents go with their pick, unless it breaks a limit and the clock waits) / Ask me (every question waits). `SimulationDriver` holds the clock on each question; `seek` takes the agents' pick for countdown questions and stops at ones that wait.
+- The agents panel is a dropdown that opens when a run starts and shows the live trace (each step's sub-steps appear as the clock runs). The camera views sit as a row above it (on the map in compact layouts).
 - "Ask the agents": `POST /api/ask` is a Vite dev/preview middleware in `vite.config.ts`. It sends the run's facts to Qwen (Alibaba Cloud Model Studio) with the key from `.env.local` (`DASHSCOPE_API_KEY`, `DASHSCOPE_BASE_URL`, `QWEN_MODEL`; see `.env.example`). The key never reaches the browser. Without it, `src/agents/ask.ts` answers from built-in rules. Qwen explains; it never approves or changes a decision.
 
 ## Crew drive and traffic

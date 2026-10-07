@@ -65,13 +65,12 @@ export function AutonomySwitch() {
       </div>
       {policy.autonomy === 'limits' && (
         <div className="limits" role="group" aria-label="Spending limit">
-          <span>Spend up to</span>
+          <span>Spend alone up to</span>
           {SPEND_LIMITS.map((v) => (
             <button key={v} className="limit-chip" aria-pressed={policy.spendLimit === v} onClick={() => setSpendLimit(v)}>
               {formatMoney(v)}
             </button>
           ))}
-          <span>alone</span>
         </div>
       )}
     </div>

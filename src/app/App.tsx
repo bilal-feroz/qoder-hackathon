@@ -100,6 +100,7 @@ export function App() {
         <SignalRail />
       </aside>
       <aside className="rail rail-r panel-enter" style={{ ['--enter-delay' as string]: '160ms' }} aria-label="UnderGrid agents">
+        {!compact && <CameraPresets />}
         <AgentsPanel />
       </aside>
 
@@ -113,7 +114,7 @@ export function App() {
         </div>
         <div className="vp-tr panel-enter" style={{ ['--enter-delay' as string]: '340ms' }}>
           <ViewToggles />
-          <CameraPresets />
+          {compact && <CameraPresets />}
         </div>
         <div className="vp-bl">
           <ForecastCard />

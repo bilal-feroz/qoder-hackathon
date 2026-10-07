@@ -168,7 +168,7 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
-  max-height: calc(100vh - var(--header-h) - var(--gap) * 2 - 2px);
+  max-height: calc(100vh - var(--header-h) - var(--gap) * 2 - var(--rail-tools-h, 0px) - 2px);
   border-radius: 14px;
   background: linear-gradient(180deg, rgba(12, 18, 27, 0.95), rgba(8, 12, 19, 0.95));
   backdrop-filter: blur(16px) saturate(1.25);
@@ -266,9 +266,44 @@
 }
 
 .agents-dd.is-open .agents-body-inner {
-  overflow-y: auto;
-  padding: 12px;
+  padding: 12px 0 10px;
   border-top-color: var(--line);
+}
+
+.agents-body-inner > .autonomy,
+.agents-foot {
+  padding: 0 12px;
+}
+
+/* the trace scrolls; the switch above and the ask box below stay put */
+.agents-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 2px 12px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 172, 204, 0.25) transparent;
+}
+
+.agents-scroll:empty {
+  display: none;
+}
+
+.agents-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: none;
+}
+
+.agents-idle {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-2);
 }
 
 .autonomy {
@@ -1024,4 +1059,480 @@
 
 .outcome .agent-chart {
   margin-bottom: 8px;
+}
+
+/* ---------- the trace: one line per step, the live one open ---------- */
+.trace {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* the thread joining the steps */
+.trace::before {
+  content: '';
+  position: absolute;
+  left: 9.5px;
+  top: 12px;
+  bottom: 12px;
+  width: 1px;
+  background: linear-gradient(180deg, transparent, var(--line-2) 8%, var(--line-2) 92%, transparent);
+}
+
+.trace-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  column-gap: 9px;
+  animation: entry-in var(--duration-slow) var(--ease-smooth-out) both;
+}
+
+.trace-dot {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 28px;
+}
+
+.trace-dot i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #0b111a;
+  box-shadow: inset 0 0 0 1.5px var(--cyan);
+}
+
+.trace-item.is-warn .trace-dot i {
+  box-shadow: inset 0 0 0 1.5px var(--amber);
+}
+
+.trace-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  min-height: 28px;
+  padding: 0 6px;
+  margin: 0 -6px;
+  border-radius: 8px;
+  text-align: left;
+  transition: background-color var(--duration-quick) ease;
+}
+
+.trace-row:not(:disabled):hover {
+  background: rgba(148, 172, 204, 0.06);
+}
+
+.trace-row:disabled {
+  cursor: default;
+}
+
+.trace-agent {
+  flex: none;
+  width: 58px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.trace-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+  color: var(--text-1);
+}
+
+.trace-item.is-open .trace-title {
+  white-space: normal;
+  color: var(--text-0);
+}
+
+.trace-item.is-live .trace-agent {
+  color: var(--cyan);
+}
+
+.trace-item.is-live .trace-title {
+  font-weight: 500;
+}
+
+.trace-how {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: 99px;
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+
+.trace-how.how-auto {
+  color: var(--emerald);
+  background: var(--emerald-soft);
+}
+
+.trace-how.how-chose,
+.trace-how.how-approved {
+  color: var(--cyan);
+  background: var(--cyan-soft);
+}
+
+.trace-how.how-default,
+.trace-how.how-waiting {
+  color: var(--amber);
+  background: var(--amber-soft);
+}
+
+.trace-more {
+  grid-column: 2;
+  padding: 0 0 8px;
+}
+
+.trace-detail {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-1);
+}
+
+/* what the agent is doing, step by step, like a tool log */
+.trace-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 7px 0 0;
+  padding: 7px 9px;
+  border-radius: 9px;
+  background: rgba(4, 7, 12, 0.55);
+  border: 1px solid var(--line);
+  list-style: none;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-1);
+}
+
+.trace-steps li {
+  position: relative;
+  padding-left: 14px;
+  animation: step-in 0.35s var(--ease-smooth-out) both;
+}
+
+.trace-steps li::before {
+  content: '\203A';
+  position: absolute;
+  left: 2px;
+  color: var(--cyan);
+}
+
+.trace-steps li.is-working {
+  color: var(--text-2);
+  animation: step-blink 1s ease-in-out infinite;
+}
+
+@keyframes step-in {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+}
+
+@keyframes step-blink {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* ---------- a question from the agents (multiple choice) ---------- */
+.qcard {
+  flex: none;
+  padding: 12px;
+  border-radius: 13px;
+  background: linear-gradient(180deg, rgba(79, 209, 232, 0.1), var(--instrument) 62%);
+  border: 1px solid rgba(124, 205, 255, 0.45);
+  color: var(--instrument-ink);
+  box-shadow:
+    0 0 30px -12px rgba(79, 209, 232, 0.45),
+    0 22px 44px -22px rgba(0, 0, 0, 0.85);
+  animation: entry-in var(--duration-slow) var(--ease-smooth-out) both;
+}
+
+.qcard.is-waiting {
+  background: linear-gradient(180deg, rgba(245, 181, 68, 0.1), var(--instrument) 62%);
+  border-color: rgba(245, 181, 68, 0.45);
+  box-shadow:
+    0 0 30px -12px rgba(245, 181, 68, 0.4),
+    0 22px 44px -22px rgba(0, 0, 0, 0.85);
+}
+
+.qcard-kicker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--cyan);
+}
+
+.qcard.is-waiting .qcard-kicker {
+  color: var(--amber);
+}
+
+.qcard-count {
+  margin-left: auto;
+  font-weight: 500;
+  color: var(--instrument-ink-2);
+}
+
+.qcard h3 {
+  margin: 9px 0 3px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.qcard-context {
+  margin: 0 0 10px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--instrument-ink-2);
+}
+
+.qcard-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.qchoice {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 9px;
+  width: 100%;
+  padding: 8px 10px 8px 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 172, 204, 0.18);
+  background: rgba(255, 255, 255, 0.02);
+  text-align: left;
+  transition:
+    border-color var(--duration-quick) ease,
+    background-color var(--duration-quick) ease,
+    transform var(--duration-quick) ease;
+}
+
+.qchoice:not(:disabled):hover {
+  border-color: rgba(124, 205, 255, 0.55);
+  background: rgba(79, 209, 232, 0.08);
+}
+
+.qchoice:not(:disabled):active {
+  transform: scale(0.99);
+}
+
+.qchoice.is-pick {
+  border-color: rgba(124, 205, 255, 0.5);
+  background: rgba(79, 209, 232, 0.07);
+}
+
+.qchoice:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.qchoice-letter {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  border: 1px solid rgba(148, 172, 204, 0.3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--instrument-ink);
+}
+
+.qchoice.is-pick .qchoice-letter {
+  border-color: transparent;
+  background: var(--cyan);
+  color: #041016;
+  font-weight: 600;
+}
+
+.qchoice-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.qchoice-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--instrument-ink);
+}
+
+.qchoice-tag {
+  padding: 0 7px;
+  border-radius: 99px;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 17px;
+  color: var(--cyan);
+  background: var(--cyan-soft);
+}
+
+.qchoice-note {
+  font-size: 11.5px;
+  line-height: 1.35;
+  color: var(--instrument-ink-2);
+}
+
+.qchoice-warn {
+  font-size: 11px;
+  color: var(--amber);
+}
+
+.qcard-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--instrument-ink-2);
+}
+
+.qcard-foot > span {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 10px;
+}
+
+.qcard-foot button {
+  align-self: flex-start;
+  font-size: 11.5px;
+  color: var(--instrument-ink);
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.25);
+  text-underline-offset: 3px;
+}
+
+.qcard-foot button:hover {
+  text-decoration-color: currentColor;
+}
+
+.qcard-bar {
+  display: block;
+  height: 3px;
+  border-radius: 99px;
+  background: rgba(148, 172, 204, 0.16);
+  overflow: hidden;
+}
+
+.qcard-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #4fd1e8, #a6ecff);
+  transform-origin: left;
+  transition: transform 0.1s linear;
+}
+
+/* ---------- the calls behind the result ---------- */
+.outcome-calls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+}
+
+.outcome-calls li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 99px;
+  border: 1px solid var(--line-2);
+  font-size: 11.5px;
+  color: var(--text-0);
+}
+
+.outcome-calls li span {
+  font-size: 10.5px;
+  color: var(--text-2);
+}
+
+.outcome-calls li.by-you span {
+  color: var(--cyan);
+}
+
+/* ---------- camera views as a row on top of the agents ---------- */
+.rail-r {
+  --rail-tools-h: 46px;
+  gap: 8px;
+}
+
+.app.is-compact .rail-r {
+  --rail-tools-h: 0px;
+}
+
+.rail-r > .ov-bar.presets {
+  flex: none;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 4px;
+  gap: 2px;
+}
+
+.rail-r > .presets .preset-btn.icon-only {
+  flex: 1;
+  width: auto;
+  height: 30px;
+}
+
+.rail-r > .presets .bar-sep {
+  width: 1px;
+  height: 18px;
+  margin: 0 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trace-item,
+  .trace-steps li,
+  .qcard,
+  .trace-steps li.is-working {
+    animation: none;
+  }
+  .qcard-bar i {
+    transition: none;
+  }
+}
+
+.outcome-actions .btn-primary {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 13px;
 }
