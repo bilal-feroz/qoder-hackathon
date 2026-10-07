@@ -18,5 +18,5 @@
     "useDefineForClassFields": true,
     "paths": { "@/*": ["./src/*"] }
   },
-  "include": ["src", "vite.config.ts"]
+  "include": ["src", "server", "worker", "vite.config.ts"]
 }

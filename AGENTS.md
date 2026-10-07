@@ -1,7 +1,8 @@
 # UnderGrid city twin (Vite + React + three.js)
 
-- Dev: `npm run dev` (http://localhost:5173) · Types: `npm run typecheck` · Build: `npm run build`
+- Dev: `npm run dev` (http://localhost:5173) · Types: `npm run typecheck` · Build: `npm run build` · Deploy: `npm run deploy`
 - Routes (hash): `/` landing page, `/#twin` the 3D twin, `/#demo` the twin with the story auto-playing (`src/app/Root.tsx`).
+- Hosting: Cloudflare Worker `undergrid` (`wrangler.jsonc`, Awaiz Account) serves `dist/` at https://undergrid.kanbanstudios.ae; `worker/index.ts` handles `/api/*`. The Qwen call lives in `server/ask.ts`, shared with the Vite middleware. Set the key with `npx wrangler secret put DASHSCOPE_API_KEY`.
 - UI copy rule: plain words for non-experts; no all-caps labels. UnderGrid tokens live in `src/styles/tokens.css`, overrides in `src/styles/undergrid.css`, agents panel styles in `src/styles/agents.css`, maps in `src/styles/geo.css`.
 
 ## Tailwind + shadcn (landing page only)

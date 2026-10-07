@@ -6,3 +6,5 @@ dist-ssr
 .DS_Store
 *.log
 .claude/worktrees
+.wrangler
+.dev.vars
